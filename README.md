@@ -258,7 +258,24 @@ The available menu item are listed in []. The current menu is displayed at the e
 	current menu. The flash indicates the power profile selction menu
 
 
+### settings menu
+This menu is used to change the operation mode or calibration value.
+``` 
+(i)=auto  (*)=o    *
+(i)=auto            
+(i)=auto            
+[i  i  i  x]     (i)
+```
 
+[i] or (i) icons in brackets 
+
+- first line  
+    - ramp icon for slecting automatic or manual voltage selction after power loss
+    - star icon for brightness selection as bar between "o" = min and "*" = max
+- second line  	
+  switch icon for selection automatic or manual enabling of the output after power loss
+- third line  
+  regulator icon for enabeling regulator mode none, CV, CV+CC, CV+CC max 
 
 
 
