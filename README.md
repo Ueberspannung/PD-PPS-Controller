@@ -16,7 +16,7 @@ Interface for USB Type C Chargers with PD/PPS
 - [the menu](#the-menu)
     - [main menu](#main-menu)
     - [profile menu](#profile-menu)
-- [](#)
+    - [settings menu](#settings-menu)
 - [](#)
 - [](#)
 - [](#)
@@ -163,6 +163,13 @@ What features does a lab power supply need?
 
 ## the menu
 
+### menu icons
+
+
+- ![ramp](./img/icon-ramp.jpg): ramp, main menu / current and voltage selection
+- ![wrech](./img/icon-wrench.jpg): wrench, settings menu 
+- ![flash](./img/icon-flash.jpg): flash, profile menu
+
 On startup the system will display a version and build message before starting in main menu.
 ```
  PD/PPS-Controller  
@@ -180,11 +187,7 @@ Mode (x:...) [UI^] !
 OUT  UU.UU V  I.II A
 [i  i  i  i  i]  (i)
 ```
-
 last line i: menu icons
-
-Example:
-![main menu](./img/Menu-Main-3.3V-3A-Augmented-0.15A.jpg)
 
 to select a menu item press the button, a cursor will appear. Turn rotary switch until 
 cursor is at the position of the desired item. Press button again to select the menu.
@@ -230,10 +233,6 @@ I=  I.II A max
 
 last line i: menu icons
 
-Examples:  
-![profile menu 1](./img/Menu-Profile-12V-Fix.jpg)
-  
-![profile menu 2](./img/Menu-Profile-3.3V-21V-Augmented.jpg)
 
 to select a profile press the button navigate to the "#" symbol in the first line and press 
 again to enter profile selection. Turning will step through avalabla profiles. To select a 
@@ -261,7 +260,7 @@ The available menu item are listed in []. The current menu is displayed at the e
 ### settings menu
 This menu is used to change the operation mode or calibration value.
 ``` 
-(i)=auto  (*)=o    *
+(i)=auto  (*)=\.    *
 (i)=auto            
 (i)=auto            
 [i  i  i  x]     (i)
@@ -275,7 +274,52 @@ This menu is used to change the operation mode or calibration value.
 - second line  	
   switch icon for selection automatic or manual enabling of the output after power loss
 - third line  
-  regulator icon for enabeling regulator mode none, CV, CV+CC, CV+CC max 
+  regulator icon for enabeling regulator mode: none, CV, CV+CC, CV+CC max 
+- fourth line 
+The available menu item are listed in []. The current menu is displayed at the end of the line in ()  
+    1. icon: ramp  
+    select to return to main menu.
+	2. icon: mark symbol  
+	select to enter calibration menu
+    3. icon: check mark  
+    select to accept the new settings
+    4. icon: cancel "x"  
+	select to discard changes  
+    5. icon: wrench  
+	current menu. The wrench indicates the settings menu
+
+
+### calibration menu
+```
+I= I.III A:  I.III A
+                    
+                    
+[i  i  i  x]     (i)
+```
+[i] or (i) icons in brackets 
+
+to adjust the current measurment calibration enable output with a load and use a calibrated ampere meter to measure the current.  
+enter the settings menu and go to the calibration menu. enter the measured current and select the checkmark
+it is reccommended to chose a current as high as possible to gain maximum precision.
+
+- first line  
+    - left value
+	  last calibration value (editable)
+    - right value
+	  recent current measurement
+- fourth line 
+The available menu item are listed in []. The current menu is displayed at the end of the line in ()  
+    1. icon: ramp  
+    select to return to main menu.
+	2. icon: dustbin  
+    slect to reset to default state, all manual, default calibration value
+    3. icon: check mark  
+    select to accept the new profile
+    4. icon: cancel "x"  
+	select to discard changes  
+    5. icon: mark symbol  
+	current menu. 
+
 
 
 
