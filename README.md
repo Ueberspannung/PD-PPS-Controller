@@ -4,24 +4,25 @@ Interface for USB Type C Chargers with PD/PPS
 ##### Table of contents
 - [credits](#credits)
 - [motivation](#motivation)
-- [the hardware V1.0](#the-hardware-V1.0)
-    - [voltage and current sensor](#voltage-and-current-sensor)
-    - [PD-Micro](#PD-Micro)
-    - [FT232](#FT232)
-    - [LCD](#LCD)
-    - [switch](#switch)
-- [the features](#the-features)
-    - [basic features](#basic-features)
-    - [advanced features](#advanced-features)
-- [the menu](#the-menu)
-    - [menu icons](#menu icons)
-    - [main menu](#main-menu)
-    - [profile menu](#profile-menu)
-    - [settings menu](#settings-menu)
-	- [calibration menu](#calibration-menu)
+- [avr prototype]
+	- [the hardware](#the-hardware)
+		- [voltage and current sensor](#voltage-and-current-sensor)
+		- [PD-Micro](#PD-Micro)
+		- [FT232](#FT232)
+		- [LCD](#LCD)
+		- [switch](#switch)
+	- [the features](#the-features)
+		- [basic features](#basic-features)
+		- [advanced features](#advanced-features)
+	- [the menu](#the-menu)
+		- [menu icons](#menu-icons)
+		- [main menu](#main-menu)
+		- [profile menu](#profile-menu)
+		- [settings menu](#settings-menu)
+		- [calibration menu](#calibration-menu)
+	- [the software](#the-software)
 - [](#)
-- [](#)
-- [](#)
+- [comment on USB type C chargers](#comment-on-USB-type-C-chargers)
 
 ## credits
 This project originates in a colaboration with [embres GmbH](https://www.embres.de/).  
@@ -91,50 +92,52 @@ rotary switch as UI?.
 
 And this leads me to my first prototype.
 
-## the hardware V1.0
+## avr prototype
+
+### the harbware
 ![PD-PPS-COntroller](./img/PD-PPS-Controller.jpg)  
 
 and here are the components clockwise beginnign with the upper left.  
 
-### voltage and current sensor
+#### voltage and current sensor
 ![INA219 and 24C256](./img/INA219-24C256.jpg)  
 This is the voltage and current sensor. The shunt resistor has been reduce to R015 to get a 5 A full scale reading.  
 There is a serial EEPROM 24C256 on the board. This is used for parameter storage. I could have used the Atmel's on 
 chip EEPROM but this has way less wear resistance. I did not know how many write cycles would be needed, so i chose
 an externel EEPROM
 
-### PD-Micro
+#### PD-Micro
 ![PD-Micro](./img/PD-Micro.jpg)  
 This is the heart of the circuit. 
 
-### FT232
+#### FT232
 ![FT232](./img/FT232-USB-Serial.jpg)
 The USB - C port of the PD-Micro is occupied by the power supply. The USB interface can't be use for communication.
 The HW serial interface is therfore wired to an FT232 USB to serial chip.
 
-### LCD
+#### LCD
 ![display and contrast voltage](./img/Display_Contrast.jpg)  
 This is an 16x4 HD44780 compatible display with PCF8574, voltage inverter and current source for contrast as described 
 in my [LCD library](https://github.com/Ueberspannung/LCD44780).
 
-### switch
+#### switch
 left to the display there is a [KY-040](https://github.com/Ueberspannung/RotaryEncoderSwitch) rotary encoder switch. 
 Right above the switch there is just a I2C and VCC bus bar.  
 
-## the features
+### the features
 What features does a lab power supply need?  
 - adjustable voltage in constant voltage mode
 - adjustable current in constant current mode
 - automatic switching froma constant voltage to constant current and vice versa
 
-### basic feautres
+#### basic feautres
 - it has to be possible to adjust voltage and current settings
     - there needs to be a possibility to selct a profile  
       - when selecting a fixed profile there are no further options  
 	    a fixed profile wil be requested with maximum available current
 	  - when selecting an augmented profile voltage and current can be selected
 
-### advanced features
+#### advanced features
 - providing "regulated" output (only possible with augmented profile)  
   this will be optional. There will be four options
     - no regulation  
@@ -163,9 +166,9 @@ What features does a lab power supply need?
 - brightness adjustment of the display
 
 
-## the menu
+### the menu
 
-### menu icons
+#### menu icons
 
 - menu icons
     - ramp: main menu    
@@ -175,7 +178,7 @@ What features does a lab power supply need?
     - flash, profile menu  
       ![flash](./img/icon-flash.jpg)
     - mark symbol: calibration menu  
-      ![mark symbol](./img/icon-mark.jpg)
+      ![calibration](./img/icon-calibration.jpg)
 - action icons 
     - check mark: accept modification to values  
       ![check mark](./img/icon-check.jpg)
@@ -193,11 +196,11 @@ What features does a lab power supply need?
     - regulator: regulator setttings  
       ![regulator](./img/icon-regulator.jpg)
     - asterisk: brightness selection  
-      ![asterisk](./img/icon-asterisk.jpg)
+      ![brightness0](./img/icon-brightness.jpg)
 	
 
 
-
+#### startup message
 On startup the system will display a version and build message before starting in main menu.
 ```
  PD/PPS-Controller  
@@ -208,7 +211,7 @@ Build:   mmm dd yyyy
 
 after initializiation is completed the main menu will be displayed
 
-### main menu
+#### main menu
 ```
 Mode (x:...) [UI^] ! 
      UU.UU V  I.II A
@@ -250,7 +253,7 @@ The available menu item are listed in []. The current menu is displayed at the e
     6. icon: ramp
     Current menu. The ramp icon indicates the increment or decrement function of the main menu.
 
-### profile menu
+#### profile menu
 this menu is used to select the desired PD profile.
 ```
  # 1 / n  (...)     
@@ -285,7 +288,7 @@ The available menu item are listed in []. The current menu is displayed at the e
 	current menu. The flash indicates the power profile selction menu
 
 
-### settings menu
+#### settings menu
 This menu is used to change the operation mode or calibration value.
 ``` 
 (i)=auto  (*)=.    *
@@ -317,7 +320,7 @@ The available menu item are listed in []. The current menu is displayed at the e
 	current menu. The wrench indicates the settings menu
 
 
-### calibration menu
+#### calibration menu
 ```
 I= I.III A:  I.III A
                     
@@ -348,11 +351,11 @@ The available menu item are listed in []. The current menu is displayed at the e
     5. icon: mark symbol  
 	current menu. 
 
+### the software
 
 
 
-
-## comment on USB type C cahrgers
+## comment on USB type C chargers
 My Charger supports 5 V / 9 V / 12 V / 15 V @ 3A and 20 V @ 5A fixed profiles and 3.3 V - 21 V @ 5 A augmented 
 profile. Be careful many chargers marked with 100W (even Ugreen) will only support 65 W PPS (3.25 A) with 
 limited voltage range. They may not supprot voltages below 3.3 V. Some will even have two PPS profiles with
