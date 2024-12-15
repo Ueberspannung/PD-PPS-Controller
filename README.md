@@ -14,9 +14,11 @@ Interface for USB Type C Chargers with PD/PPS
     - [basic features](#basic-features)
     - [advanced features](#advanced-features)
 - [the menu](#the-menu)
+    - [menu icons](#menu icons)
     - [main menu](#main-menu)
     - [profile menu](#profile-menu)
     - [settings menu](#settings-menu)
+	- [calibration menu](#calibration-menu)
 - [](#)
 - [](#)
 - [](#)
@@ -165,10 +167,36 @@ What features does a lab power supply need?
 
 ### menu icons
 
+- menu icons
+    - ramp: main menu    
+      ![ramp](./img/icon-ramp.jpg)
+    - wrench: settings menu  
+      ![wrech](./img/icon-wrench.jpg)
+    - flash, profile menu  
+      ![flash](./img/icon-flash.jpg)
+    - mark symbol: calibration menu  
+      ![mark symbol](./img/icon-mark.jpg)
+- action icons 
+    - check mark: accept modification to values  
+      ![check mark](./img/icon-check.jpg)
+    - cancel "x": discard changes made to values  
+      ![cancel](./img/icon-cancel.jpg)
+    - dustbin: clear all settings, reset to default  
+      ![dustbin](./img/icon-dustbin.jpg)
+    - switch: enable or disable output  
+      ![switch](./img/icon-switch.jpg)
+- option icons  
+    - ramp: slecect automatic voltage power selection after power loss    
+      ![ramp](./img/icon-ramp.jpg)
+	- switch: select automatic output enabling after power loss  
+	  ![switch](./img/icon-switch)
+    - regulator: regulator setttings  
+      ![regulator](./img/icon-regulator.jpg)
+    - asterisk: brightness selection  
+      ![asterisk](./img/icon-asterisk.jpg)
+	
 
-- ![ramp](./img/icon-ramp.jpg): ramp, main menu / current and voltage selection
-- ![wrech](./img/icon-wrench.jpg): wrench, settings menu 
-- ![flash](./img/icon-flash.jpg): flash, profile menu
+
 
 On startup the system will display a version and build message before starting in main menu.
 ```
@@ -260,7 +288,7 @@ The available menu item are listed in []. The current menu is displayed at the e
 ### settings menu
 This menu is used to change the operation mode or calibration value.
 ``` 
-(i)=auto  (*)=\.    *
+(i)=auto  (*)=.    *
 (i)=auto            
 (i)=auto            
 [i  i  i  x]     (i)
