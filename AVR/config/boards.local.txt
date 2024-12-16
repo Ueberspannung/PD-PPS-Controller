@@ -1,0 +1,52 @@
+# See: http://code.google.com/p/arduino/wiki/Platforms
+
+menu.cpu=Processor
+
+
+##############################################################
+# on windows copy to C:\Users\_user_\AppData\Local\Arduino15\packages\arduino\hardware\avr\1.8.6\
+# Arduino Board definition for Arduino Leonardo (32U4) without bootloader
+# utilizing full 32kB Flash
+
+leonardonbl.name=Arduino Leonardo w/o bootloader
+leonardonbl.vid.0=0x2341
+leonardonbl.pid.0=0x0036
+leonardonbl.vid.1=0x2341
+leonardonbl.pid.1=0x8036
+leonardonbl.vid.2=0x2A03
+leonardonbl.pid.2=0x0036
+leonardonbl.vid.3=0x2A03
+leonardonbl.pid.3=0x8036
+
+leonardonbl.upload.tool=avrdude
+leonardonbl.upload.protocol=
+leonardonbl.upload.low_fuses=0xff
+leonardonbl.upload.high_fuses=0xd9
+leonardonbl.upload.extended_fuses=0xcb
+
+leonardonbl.upload.maximum_size=32768
+leonardonbl.upload.maximum_data_size=2560
+leonardonbl.upload.speed=57600
+leonardonbl.upload.disable_flushing=true
+leonardonbl.upload.use_1200bps_touch=true
+leonardonbl.upload.wait_for_upload_port=true
+
+leonardonbl.bootloader.tool=avrdude
+leonardonbl.bootloader.low_fuses=0xff
+leonardonbl.bootloader.high_fuses=0xd8
+leonardonbl.bootloader.extended_fuses=0xcb
+leonardonbl.bootloader.file=caterina/Caterina-Leonardo.hex
+leonardonbl.bootloader.unlock_bits=0x3F
+leonardonbl.bootloader.lock_bits=0x2F
+
+leonardonbl.build.mcu=atmega32u4
+leonardonbl.build.f_cpu=16000000L
+leonardonbl.build.vid=0x2341
+leonardonbl.build.pid=0x8036
+leonardonbl.build.usb_product="Arduino Leonardo"
+leonardonbl.build.board=AVR_LEONARDO
+leonardonbl.build.core=arduino
+leonardonbl.build.variant=leonardo
+leonardonbl.build.extra_flags={build.usb_flags}
+
+

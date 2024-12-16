@@ -4,7 +4,7 @@ Interface for USB Type C Chargers with PD/PPS
 ##### Table of contents
 - [credits](#credits)
 - [motivation](#motivation)
-- [avr prototype]
+- [AVR prototype](#AVR-prototype)
 	- [the hardware](#the-hardware)
 		- [voltage and current sensor](#voltage-and-current-sensor)
 		- [PD-Micro](#PD-Micro)
@@ -21,6 +21,13 @@ Interface for USB Type C Chargers with PD/PPS
 		- [settings menu](#settings-menu)
 		- [calibration menu](#calibration-menu)
 	- [the software](#the-software)
+	    - [build instructions](#build instructions)
+- [SAM prototype](#SAM-prototype)
+- [](#)
+- [](#)
+- [](#)
+- [](#)
+- [](#)
 - [](#)
 - [comment on USB type C chargers](#comment-on-USB-type-C-chargers)
 
@@ -352,9 +359,47 @@ The available menu item are listed in []. The current menu is displayed at the e
 	current menu. 
 
 ### the software
+the AVR SW is written with Arduino IDE. While developing the SW I found out a few things about the system:
+- The booltloader on AT32U4 devices (such as Leonardo) takes up 4 kB of program space, that's 1/8 of the total
+program space. 
+- the AVR is not specified for 16 MHz @ 3.3 V, the clock has to be scaled down when operating at voltages below 5V
+- the LCD backlight brightness drops sginificantly from 5 V to 3.3 VCC
+- 32 kB is quite small for this project.
+
+after initial succes a quickly ran into issues with FLASH and RAM. You might be able to run the AVR code but I 
+recommend to reduce the functionality the free some memory.
+
+and this leads me to rhe second prototype using ATSAMD21G18.
 
 
+#### build instructions
+The software in the AVR folder is as is. Ther will be no further development in this branch. It kind of work but use 
+at your own risk.
+It only compiles without bootloader, you will need to add the boards.local.txt file from the config folder to
+```
+C:\Users\_user_\AppData\Local\Arduino15\packages\arduino\hardware\avr\1.8.6\
+```
+(at least on windows machines) an select ***Arduino Leonardo w/o bootloader*** from the available boars.
 
+You will need [AVRDUDE](https://github.com/avrdudes/avrdude/) and an usb-asp compatible programmer to flash the SW. 
+For non cli users: [AVRDUESS](https://github.com/ZakKemble/AVRDUDESS) is a great gui for AVRDUDE.   
+You might as well use an Arduino Uno as [USB to ISP bridge](https://docs.arduino.cc/built-in-examples/arduino-isp/ArduinoISP/).
+ 
+## SAM prototype
+After my setbacks I tried an Arduino Zero. This board uses the ATSAMD21G18 with is a Cortex M0+ ARM controller running at 
+48 MHz. It has 256 kB FLASH and 32 kB RAM and lots of interfaces.
+A quick port showed that the SW could be easyly ported from AVR to ARM with almost no issues.
+
+This was the point where we decided to start our first custom PCB avoiding all the problems with encountered with the first portotype.
+- the CPU runs at 48 MHz @ 3.3 V, so ther is no need for slowing down the CPU wenn reducing the input voltage
+- a RGB LED was added to indicate the state of operation
+- a CAT4004 was added to control the LCD backlight
+- a LM2664 replaced the Villard / Greinacher circuit an frees a port pin
+- a USB typ C connector is exclusively used for power supply
+- a micro USB connector is used for SW Update and USB to Serial conversion
+- the core voltage supply is selctable between USB C und micro USB. so SW Update is possible even when no USB C is connected
+
+ 
 ## comment on USB type C chargers
 My Charger supports 5 V / 9 V / 12 V / 15 V @ 3A and 20 V @ 5A fixed profiles and 3.3 V - 21 V @ 5 A augmented 
 profile. Be careful many chargers marked with 100W (even Ugreen) will only support 65 W PPS (3.25 A) with 
