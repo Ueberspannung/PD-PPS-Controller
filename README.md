@@ -24,7 +24,7 @@ Interface for USB Type C Chargers with PD/PPS
 	    - [build instructions](#build instructions)
 - [SAM prototype](#SAM-prototype)
 	- [the first SAM hardware](#the-first-SAM-hardware)
-- [](#)
+    - [menu modifications](#menu-modifications)
 - [](#)
 - [](#)
 - [](#)
@@ -417,8 +417,23 @@ drop to ~3 V at 3.3 V Vbus.
 The CPU will savely operate down to 2.7 V depending on the brownout settings.
 
 ### the first SAM hardware
+The PCBA:  
+![bottom](./img/USB-PD-4011A_01.jpg)  
+  
+A working prototype:  
+![top](./img/USB-PD-4011A_02.jpg)   
 
-![top](./img/USB-PD-4011A_02.jpg) ![bottom](./img/USB-PD-4011A_01.jpg)
+### menu modifications
+#### mew calibration menu
+```
+Current Calibration "
+ internal   I.III A "
+ reference  I.III A " 
+[i  i  i  x]     (i)
+```
+the current reading and the reference value have been reorganised-
+
+
  
 ## comment on USB type C chargers
 My Charger supports 5 V / 9 V / 12 V / 15 V @ 3A and 20 V @ 5A fixed profiles and 3.3 V - 21 V @ 5 A augmented 
