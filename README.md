@@ -21,16 +21,20 @@ Interface for USB Type C Chargers with PD/PPS
 		- [settings menu](#settings-menu)
 		- [calibration menu](#calibration-menu)
 	- [the software](#the-software)
-	    - [build instructions](#build instructions)
-- [SAM prototype](#SAM-prototype)
-	- [the first SAM hardware](#the-first-SAM-hardware)
+	    - [build instructions](#build-instructions)
+- [ARM prototype](#ARM-prototype)
+	- [the first ARM hardware](#the-first-ARM-hardware)
+        - [necessary rework on first ARM hardware](#necessary-rework-on-first-ARM-hardware)
     - [menu modifications](#menu-modifications)
-- [](#)
-- [](#)
-- [](#)
-- [](#)
-- [](#)
+        - [new calibration menu](#new-calibration-menu)
+    - [ARM software](#ARM-software)
+        - [work in progress](#work-in-progress)
+        - [ARM build instructions](#ARM-build-instructions)
 - [comment on USB type C chargers](#comment-on-USB-type-C-chargers)
+    - [tested chargers](#tested-chargers)
+    - [issues](#issues)
+        - [power supply resets](#power-supply-resets)
+        - [power bank resets after 10s](#power-bank-resets-after-10s)
 
 ## credits
 This project originates in a colaboration with [embres GmbH](https://www.embres.de/).  
@@ -102,7 +106,7 @@ And this leads me to my first prototype.
 
 ## avr prototype
 
-### the harbware
+### the hardware
 ![PD-PPS-COntroller](./img/PD-PPS-Controller.jpg)  
 
 and here are the components clockwise beginnign with the upper left.  
@@ -382,12 +386,15 @@ C:\Users\_user_\AppData\Local\Arduino15\packages\arduino\hardware\avr\1.8.6\
 ```
 (at least on windows machines) an select ***Arduino Leonardo w/o bootloader*** from the available boars.
 
-You will need [AVRDUDE](https://github.com/avrdudes/avrdude/) and an usb-asp compatible programmer to flash the SW. 
-For non cli users: [AVRDUESS](https://github.com/ZakKemble/AVRDUDESS) is a great gui for AVRDUDE.   
-You might as well use an Arduino Uno as [USB to ISP bridge](https://docs.arduino.cc/built-in-examples/arduino-isp/ArduinoISP/).
+You will need [AVRDUDE](https://github.com/avrdudes/avrdude/) and an [USBasp](https://www.fischl.de/usbasp/)  
+***Hint: be careful when purchasing one of the cheap clones. They often come with outdated SW and will not work. 
+It is no problem to update those but you will need a working USBasp adaptor.***
+
+programmer to flash the SW. For non cli users: [AVRDUESS](https://github.com/ZakKemble/AVRDUDESS) is a great gui for AVRDUDE.   
+You might as well use an Arduino Uno as [USB to ISP bridge](https://docs.arduino.cc/built-in-examples/arduino-isp/ArduinoISP/).  
  
-## SAM prototype
-After my setbacks I tried an Arduino Zero. This board uses the ATSAMD21G18 with is a Cortex M0+ ARM controller running at 
+## ARM prototype
+After my setbacks I tried an Arduino Zero. This board uses the ATSAMD21G18 which is a Cortex M0+ ARM controller running at 
 48 MHz. It has 256 kB FLASH and 32 kB RAM and lots of interfaces.
 A quick port showed that the SW could be easyly ported from AVR to ARM with almost no issues.
 
@@ -401,9 +408,11 @@ This was the point where we decided to start our first custom PCB avoiding all t
 - a micro USB connector is used for SW Update and USB to Serial conversion
 - the core voltage supply is selctable between USB C und micro USB. so SW Update is possible even when no USB C is connected
 - a temperature sensor
+- a hardware UART port (Rx/Tx/GND) at 3.3 V level
+- some testpads
 
 some headache cause the Vcc supply. Most buck converter circuits need some voltage headroom to operate and "feature" an 
-undervoltage lockout circuit. But this is a no go for this cicuit. It needs to operate to as low as 3.3 V Vbus. We need an 
+undervoltage lockout circuit. But this is a no go for this circuit. It needs to operate to as low as 3.3 V Vbus. We need an 
 undervoltage bypass curcuit to guarantee operation at 3.3 V Vbus. Otherwise the circuit would lock out when VBUS drops below the 
 thresholt which is typically 4 V - 4.7 V at 3.3 V output.  
 This problem was solved slightly overengineered. We used two 3.3 V regulators which are ored by to ideal diodes.  
@@ -412,27 +421,65 @@ the buck converter operate above 5 V and outputs slightly above 3.3 V so the 3.3
 NCV2951ACDMR2G set to 3.3 V. The dropout voltage is max 450 mV at 100 mA. The current consumption of the circuit is below 50 mA
 so we will have an estimated max dropout of 300 mV.   
 When the input Voltage is above 5.06 V the LDO is idle and the Vcc is 3.45 V. When the input voltag drops below 4.55 V the buck
-converter is disabled and the LDO takes ove, resalting in a Vcc of 3.3 V. When the input voltoge continues to fall, Vcc will 
+converter is disabled and the LDO takes ove, resulting in a Vcc of 3.3 V. When the input voltoge continues to fall, Vcc will 
 drop to ~3 V at 3.3 V Vbus.  
 The CPU will savely operate down to 2.7 V depending on the brownout settings.
 
-### the first SAM hardware
+### the first ARM hardware
 The PCBA:  
 ![bottom](./img/USB-PD-4011A_01.jpg)  
   
 A working prototype:  
 ![top](./img/USB-PD-4011A_02.jpg)   
 
+#### necessary rework on first ARM hardware
+- The output needs a pull down to get a proper zero reading. In order to not to influce the curren measurement the resistor needs 
+to be place between the shunt and the power FET.
+- the series resistors of the RGB LED need to be matched to the relative brightness
+- the current selection of the CAT4004 should be set to ~12 mA / channel, no parallel operation
+- the current for the amber LED shall be set to 2 mA ~750R
+- the three bin jumper should be populatet instead or R25 
+- capacitors have to be added to the rotary encoder switch clock and data pins
+
 ### menu modifications
-#### mew calibration menu
+#### new calibration menu
 ```
-Current Calibration "
- internal   I.III A "
- reference  I.III A " 
+Current Calibration 
+ internal   I.III A 
+ reference  I.III A  
 [i  i  i  x]     (i)
 ```
-the current reading and the reference value have been reorganised-
+the current reading and the reference value have been reorganised.
 
+### SAM software
+
+The SW has been refactored and is now USB-PD2. 
+in the first SW the control of the power supply was implemente in the menu class. This is been moved to its own controller class.  
+A header for TODO reminders has been added
+A power supply test class has been added to test profile changes.
+
+#### work in progress
+- a GUI will be added to controll the circuit when a VT100 Terminal is connected to micro USB
+- a simple protocl will be added to control the device directly from SW when connected either to USB or HW UART
+
+
+#### SAM build instructions
+In order to flash the SW for the first time you will need A JTAG Debug Interface such as 
+- [Atmel ICE](https://www.microchip.com/en-us/development-tool/atatmel-ice)
+- [Segger J-Link](https://www.segger.com/debug-trace-embedded-systems/)
+- any other ARM 3.3 V JTAG / SWD debug probe which is supported by Atmel Studio or Arduino IDE.  
+  many cheap ARM debug probes seem to emulate Segger J-Link.   
+  you might find your luck with either the mythological greek female warrior or the Forty Thieves form One Thousand and One Nights. 
+- maybe an Arduino Zero wich has a EDGB (not tested)
+
+You can use Atmel Studio or the Arduino IDE to flash the Arduio Zero bootloader.  
+You can use the Blink Demo as well. Select Sketch -> export binary. The IDE will create a file xxx.ino.with_bootloader.arduino_zero.bin.
+Just flash the file. You might need to copy the fuse bits from an Arduino Zero.  
+There are some samples in the Fuses folder. Some of the fuses are factory tuned and can not be overwritten.
+
+Once the bootloader works you can flash SW using the SAM-BA bootloader. The SW provided by Microchip has a cli 
+which is suitable for all SAM devices supporting SAM-BA and is therefore a bit tricky to use. A much more simple
+tool is [Bossa from Shumatech](https://www.shumatech.com/web/products/bossa).
 
  
 ## comment on USB type C chargers
@@ -441,5 +488,128 @@ profile. Be careful many chargers marked with 100W (even Ugreen) will only suppo
 limited voltage range. They may not supprot voltages below 3.3 V. Some will even have two PPS profiles with
 differnet voltage / current ratings.
 
+### tested chargers
+- UGREEN Nexode 2 Port 100W PD-Charger  (Model CD254 #50827)
+  Supported Profiles:  
+    - Fixed	 	
+	    - 5 V / 3 A, 9 V / 3 A, 12 V / 3 A, 15 V / 3 A, 20 V / 5A
+    - Augmented 	
+	    - 3.3 - 21 V / 5A 
 
+- UGREEN Nexode 100W Desktop Charger (Model CD328 #90928)
+  Supported Profiles:  
+    - Fixed  
+	    - 5 V / 3 A, 9 V / 3 A, 12 V / 3 A, 15 V / 3 A, 20 V / 5A
+    - Augmented  	
+	    - 3.3 - 21 V / 5A 
+         
+- Anker PowerPort I 30W PD  
+  Supported Profiles:
+  - Fixed 		
+      - 5 V / 3 A, 9 V / 3 A, 15 V / 2 A, 20 V / 1.5 A
+
+- iLepo USB C Fast Charger 65 W   
+  Supported Profiles  
+    - Fixed  
+        - 5 V / 3 A, 9 V / 3 A, 12 V / 3A, 15 V / 3 A, 20 V / 3.25 A
+    - Augmented  
+        - 3.3V - 11V 5A
+
+- INIU Power Bank 20000mAh, 22.5W   
+  Supported Profiles
+    - Fixed  
+        - 5 V / 3 A, 9 V / 2.22 A, 12 V / 1.5 A
+    - Augmented  
+        -5.0 V - 5.9 V / 3 A
+        -5.0 V - 11 V / 2 A
+
+### issues
+
+#### power supply resets
+Some power suplly seem to reset the power when no current is drawn.  
+My "Nexode 100W Desktop Charger" P/N 90928 resets after ~1 h without load. Other chargers don't.
+
+#### power bank resets after 10s
+My INIU Power Bank resets with no load within ~10s   
+
+***log with load 20R
+```
+0006: FUSB302 ver ID:B_revA
+0118: USB attached CC1 vRd-3.0
+0172: RX Src_Cap id=1 raw=0x53A1
+0172:  obj0=0x2A01912C
+0172:  obj1=0x0002D0E9
+0172:  obj2=0x0003C096
+0172:  obj3=0xC076323C
+0172:  obj4=0xC0DC3228
+0172:    [0] 5.00V 3.00A
+0172:    [1] 9.00V 2.33A
+0172:    [2] 12.00V 1.50A
+0172:    [3] 5.00V-5.90V 3.00A PPS *
+0172:    [4] 5.00V-11.00V 2.00A PPS
+0176: TX Request id=0 raw=0x1082
+0176:  obj0=0x42022628
+0186: RX GoodCRC id=0 raw=0x0121
+0192: RX Accept id=2 raw=0x05A3
+0210: RX PS_RDY id=3 raw=0x07A6
+0212: PPS 5.50V 2.00A supply ready
+0214: Load SW ON
+5214: TX Request id=1 raw=0x1282
+5214:  obj0=0x42022628
+5222: RX GoodCRC id=1 raw=0x0321
+5228: RX Accept id=4 raw=0x09A3
+5246: RX PS_RDY id=5 raw=0x0BA6
+5246: PPS 5.50V 2.00A supply ready
+10248:TX Request id=2 raw=0x1482
+10248: obj0=0x42022628
+10256:RX GoodCRC id=2 raw=0x0521
+10262:RX Accept id=6 raw=0x0DA3
+10280:RX PS_RDY id=7 raw=0x0FA6
+10280:PPS 5.50V 2.00A supply ready
+  ...
+```
+
+***log without load:***
+```
+0006: FUSB302 ver ID:B_revA
+0118: USB attached CC1 vRd-3.0
+0172: RX Src_Cap id=1 raw=0x53A1
+0172:  obj0=0x2A01912C
+0172:  obj1=0x0002D0E9
+0172:  obj2=0x0003C096
+0172:  obj3=0xC076323C
+0172:  obj4=0xC0DC3228
+0172:    [0] 5.00V 3.00A
+0172:    [1] 9.00V 2.33A
+0172:    [2] 12.00V 1.50A
+0172:    [3] 5.00V-5.90V 3.00A PPS *
+0172:    [4] 5.00V-11.00V 2.00A PPS
+0176: TX Request id=0 raw=0x1082
+0176:  obj0=0x42022628
+0186: RX GoodCRC id=0 raw=0x0121
+0192: RX Accept id=2 raw=0x05A3
+0210: RX PS_RDY id=3 raw=0x07A6
+0212: PPS 5.50V 2.00A supply ready
+0214: Load SW ON
+5214: TX Request id=1 raw=0x1282
+5214:  obj0=0x42022628
+5222: RX GoodCRC id=1 raw=0x0321
+5228: RX Accept id=4 raw=0x09A3
+5248: RX PS_RDY id=5 raw=0x0BA6
+5248: PPS 5.50V 2.00A supply ready
+10250:TX Request id=2 raw=0x1482
+10250: obj0=0x42022628
+10258:RX GoodCRC id=2 raw=0x0521
+10264:RX Accept id=6 raw=0x0DA3
+10284:RX PS_RDY id=7 raw=0x0FA6
+10284:PPS 5.50V 2.00A supply ready
+
+==> The Power bank resets and defaults to 5V only.
+
+0006: FUSB302 ver ID:B_revA
+0118: USB attached CC1 vRd-3.0
+0352: TX Get_Src_Cap id=0 raw=0x0087
+0704: TX Get_Src_Cap id=0 raw=0x0087
+1056: TX Get_Src_Cap id=0 raw=0x0087
+```
 
