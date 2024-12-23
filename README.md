@@ -62,7 +62,7 @@ And here is my idea: Have you ever used one of those chunky lab power supplies e
 These power supplies often range from 0 - 30 V and 0 - 5 A. As far as I am concerned, I mostly use 5 - 15 V at a
 few amps.  
 
-What if we can use this augmented profile to mimic a lab power supply? We would nee a chip which is capable of 
+What if we can use this augmented profile to mimic a lab power supply? We would need a chip which is capable of 
 requesting this profile from a suitable PPS capable USB Type C power supply.  
 Well there is the easy and the hard way:  
 The easy way would be to tell some chip to request the desired voltage form the power supply.  
@@ -74,7 +74,7 @@ evaluation board form Diodes or other manufacturers eg. [MICROE](https://www.mik
 This chip has been marked as NRND and was replaced by the AP33772S. The "S" version is even easier to use but has a huge
 downside: It allows only 100 mV and 250 mA steps.  
 
-The hard way is to use one of those USB-C PD phys. they provide a OSI 0 + 1 interface to the power supply. Higher
+The hard way is to use one of those USB-C PD phys. they provide an OSI 0 + 1 interface to the power supply. Higher
 levels have to be implemented in SW. The most commonly used chip seems to be the FUSB302 form 
 [ON Semiconductor](https://www.onsemi.com/). This chip was used in the original ZY12PDN.
 
@@ -92,13 +92,24 @@ to measure voltages up to 21 V. Assuming we clip at 20.48 V we will have a resol
 just enough but we can easyly do better. When using a dedicated ADC e.g. The INA219  
 ![INA219](./img/INA219-PCBA.jpg)  
 We can improve the precision to 4 mV. This is well below the 20 mV stepsize. An we get an current sensor on top.  
+***Warning on current sensor ACS712***  
+The ACS 712 is an easy to use isolated current sensor. But:  
+- there are many Fake modules out ther using an relabled ACS704. The fake chips can easyly be found by measuring
+cuntinuity between pin 5 and 6. In the ACS704 those pins are shorted while in the ACS712 they are not. The ACS712
+has improved stability and nois reduction.
+- the ACS712 is very sensitive to VCC stability. 
+- the ACS712 is bidirectional and therefore centered aroud 2.5 V for 0 A 
+- the ACS712 uses magnetic coupling therefore is sensitive to external magnetic fields and may need complex
+magnetic shielding  
+
+  
 
 Now we can set a voltage, enable the output and measure the output voltage and current. So we can write a few 
 lines of code to implement a constant voltage / current source. Well the reagulator response time will be 
 limited by the speed of the power supply but it is within reasonable limits depenting on your USB power supply. 
 My PS is an outdated Ugreen Nexode 2 with 100W which switches in ~40 .. 50 ms.  
 
-But how is the voltage nad current slectet?
+But how is the voltage and current slectet?
 Well we could use a serial interface and a computer to "remote control" the circuit. But what about an LCD a 
 rotary switch as UI?.
 
@@ -113,7 +124,7 @@ and here are the components clockwise beginnign with the upper left.
 
 #### voltage and current sensor
 ![INA219 and 24C256](./img/INA219-24C256.jpg)  
-This is the voltage and current sensor. The shunt resistor has been reduce to R015 to get a 5 A full scale reading.  
+This is the voltage and current sensor. The shunt resistor has been reduced to R015 to get a 5 A full scale reading.  
 There is a serial EEPROM 24C256 on the board. This is used for parameter storage. I could have used the Atmel's on 
 chip EEPROM but this has way less wear resistance. I did not know how many write cycles would be needed, so i chose
 an externel EEPROM
@@ -125,11 +136,11 @@ This is the heart of the circuit.
 #### FT232
 ![FT232](./img/FT232-USB-Serial.jpg)
 The USB - C port of the PD-Micro is occupied by the power supply. The USB interface can't be use for communication.
-The HW serial interface is therfore wired to an FT232 USB to serial chip.
+The HW serial interface is therefore wired to an FT232 USB to serial chip.
 
 #### LCD
 ![display and contrast voltage](./img/Display_Contrast.jpg)  
-This is an 16x4 HD44780 compatible display with PCF8574, voltage inverter and current source for contrast as described 
+This is an 20x4 HD44780 compatible display with PCF8574, voltage inverter and current source for contrast as described 
 in my [LCD library](https://github.com/Ueberspannung/LCD44780).
 
 #### switch
@@ -140,7 +151,7 @@ Right above the switch there is just a I2C and VCC bus bar.
 What features does a lab power supply need?  
 - adjustable voltage in constant voltage mode
 - adjustable current in constant current mode
-- automatic switching froma constant voltage to constant current and vice versa
+- automatic switching from constant voltage to constant current and vice versa
 
 #### basic feautres
 - it has to be possible to adjust voltage and current settings
@@ -153,14 +164,14 @@ What features does a lab power supply need?
 - providing "regulated" output (only possible with augmented profile)  
   this will be optional. There will be four options
     - no regulation  
-      the system will set the selected valuse only
+      the system will set the selected value only
     - constant voltage  
       the system will try to adjust the output voltage within 20 mV  
-      no current active current limiting will be used. This will be done 
+      no active current limiting will be used. This will be done 
       by the power supply.	  
     - constant voltage and constant current
 	  when the current exceeds the desired value the voltage will be reduced  
-	  this will be assisted by the power supllies current limiting function
+	  this will be assisted by the power suplly's current limiting function
     - constant voltage and constant current maximum
 	  in this mode the current limiting of the power supply will be set to max.  
 	  The current limiting is done in sw only. This prevents the power supply from
@@ -204,7 +215,7 @@ What features does a lab power supply need?
     - ramp: slecect automatic voltage power selection after power loss    
       ![ramp](./img/icon-ramp.jpg)
 	- switch: select automatic output enabling after power loss  
-	  ![switch](./img/icon-switch)
+	  ![switch](./img/icon-switch.jpg)
     - regulator: regulator setttings  
       ![regulator](./img/icon-regulator.jpg)
     - asterisk: brightness selection  
@@ -240,11 +251,12 @@ Select to adjust desired voltage or current.
 - first line  
 The currently selcted profile type will be displayed.  
 in this case it is a fixed profile.
-If an augmented profile is selcted the selected refgulater mode will be displayed at the end
+If an augmented profile is selcted the selected regulater mode will be displayed at the end
 of the line.
     - U means constant voltage
     - UI means constant voltage and current limited by SW and PS hardware.
     - UI^ means constant voltage and current limited in SW, no hw support
+	- an exclamation mark will be displayed when current limiting is active
 - second line  
 The selected voltage and current rating is displayed.
 - third line  
@@ -384,7 +396,7 @@ It only compiles without bootloader, you will need to add the boards.local.txt f
 ```
 C:\Users\_user_\AppData\Local\Arduino15\packages\arduino\hardware\avr\1.8.6\
 ```
-(at least on windows machines) an select ***Arduino Leonardo w/o bootloader*** from the available boars.
+(at least on windows machines) and select ***Arduino Leonardo w/o bootloader*** from the available boards.
 
 You will need [AVRDUDE](https://github.com/avrdudes/avrdude/) and an [USBasp](https://www.fischl.de/usbasp/)  
 ***Hint: be careful when purchasing one of the cheap clones. They often come with outdated SW and will not work. 
@@ -532,7 +544,7 @@ My "Nexode 100W Desktop Charger" P/N 90928 resets after ~1 h without load. Other
 #### power bank resets after 10s
 My INIU Power Bank resets with no load within ~10s   
 
-***log with load 20R
+***log with load 20R***
 ```
 0006: FUSB302 ver ID:B_revA
 0118: USB attached CC1 vRd-3.0
