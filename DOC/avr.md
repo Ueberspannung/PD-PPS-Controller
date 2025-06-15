@@ -1,5 +1,16 @@
-
 ## avr prototype
+
+##### Table of contents
+- [the hardware](#the-hardware)
+	- [voltage and current sensor](#voltage-and-current-sensor)
+	- [PD-Micro](#PD-Micro)
+	- [FT232](#FT232)
+	- [LCD](#LCD)
+	- [switch](#switch)
+- [the features](#the-features)
+	- [basic features](#basic-features)
+	- [advanced features](#advanced-features)
+
 
 ### the hardware
 ![PD-PPS-COntroller](./img/PD-PPS-Controller.jpg)  
@@ -71,3 +82,5 @@ What features does a lab power supply need?
   When drawing a known current form the circuit one can calibrate the current measurement
   by entering ths specific value
 - brightness adjustment of the display
+
+[home](../README.md)

@@ -4,32 +4,41 @@ Interface for USB Type C Chargers with PD/PPS
 ##### Table of contents
 - [credits](#credits)
 - [motivation](#motivation)
-- [AVR prototype](./DOC/avr.md)
-	- [the hardware](#the-hardware)
-		- [voltage and current sensor](#voltage-and-current-sensor)
-		- [PD-Micro](#PD-Micro)
-		- [FT232](#FT232)
-		- [LCD](DOC/avr.md#LCD)
-		- [switch](#switch)
-	- [the features](#the-features)
-		- [basic features](#basic-features)
-		- [advanced features](#advanced-features)
-	- [the menu](#the-menu)
-		- [menu icons](#menu-icons)
-		- [main menu](#main-menu)
-		- [profile menu](#profile-menu)
-		- [settings menu](#settings-menu)
-		- [calibration menu](#calibration-menu)
-	- [the software](#the-software)
-	    - [build instructions](#build-instructions)
-- [ARM prototype](#ARM-prototype)
-	- [the first ARM hardware](#the-first-ARM-hardware)
-        - [necessary rework on first ARM hardware](#necessary-rework-on-first-ARM-hardware)
-    - [menu modifications](#menu-modifications)
-        - [new calibration menu](#new-calibration-menu)
+- [AVR prototype](./DOC/avr.md#Table-of-contents)
+	- [the hardware](./DOC/#the-hardware)
+		- [voltage and current sensor](./DOC/#voltage-and-current-sensor)
+		- [PD-Micro](./DOC/#PD-Micro)
+		- [FT232](./DOC/#FT232)
+		- [LCD](./DOC/avr.md#LCD)
+		- [switch](./DOC/#switch)
+	- [the features](./DOC/#the-features)
+		- [basic features](./DOC/#basic-features)
+		- [advanced features](./DOC/#advanced-features)
+- [first ARM prototype](./DOC/arm01.md#Table-of-contents)
+	- [the first ARM hardware](./DOC/arm01.md#the-first-ARM-hardware)
+    - [necessary rework on first ARM hardware](./DOC/arm01.md#necessary-rework-on-first-ARM-hardware)
     - [ARM software](#ARM-software)
         - [work in progress](#work-in-progress)
         - [ARM build instructions](#ARM-build-instructions)
+- [The menu]
+	- [avr menu](./DOC/avr-menu.md)
+		- [menu icons](./DOC/avr-menu.md#menu-icons)
+		- [main menu](./DOC/avr-menu.md#main-menu)
+		- [profile menu](./DOC/avr-menu.md#profile-menu)
+		- [settings menu](./DOC/avr-menu.md#settings-menu)
+		- [calibration menu](./DOC/avr-menu.md#calibration-menu)
+	- [arm menu V1.0](./DOC/arm01-menu.md)
+	    - [menu modifications](#menu-modifications)
+        - [new calibration menu](#new-calibration-menu)
+
+- [The software](./DOC/sw.md)
+  - [AVR SW](./DOC/sw.md#AVR-SW)
+    - [build instructions](./DOC/sw.md#AVR-build-instructions)
+  - [first ARM prototype SW](./DOC/sw.md#first-ARM-prototype-SW)
+    - [first ARM prototype SW](./DOC/sw.md#first-ARM-prototype-SW) 
+    - [work in progress](./DOC/sw.md#work-in-progress)
+	- [build instructions](./DOC/sw.md#first-ARM-prototyp-SW-build-instructions)
+	
 - [comment on USB type C chargers](#comment-on-USB-type-C-chargers)
     - [tested chargers](#tested-chargers)
     - [issues](#issues)
@@ -115,310 +124,6 @@ rotary switch as UI?.
 
 And this leads me to my first prototype.
 
-
-### the menu
-
-#### menu icons
-
-- menu icons
-    - ramp: main menu    
-      ![ramp](./img/icon-ramp.jpg)
-    - wrench: settings menu  
-      ![wrech](./img/icon-wrench.jpg)
-    - flash, profile menu  
-      ![flash](./img/icon-flash.jpg)
-    - mark symbol: calibration menu  
-      ![calibration](./img/icon-calibration.jpg)
-- action icons 
-    - check mark: accept modification to values  
-      ![check mark](./img/icon-check.jpg)
-    - cancel "x": discard changes made to values  
-      ![cancel](./img/icon-cancel.jpg)
-    - dustbin: clear all settings, reset to default  
-      ![dustbin](./img/icon-dustbin.jpg)
-    - switch: enable or disable output  
-      ![switch](./img/icon-switch.jpg)
-- option icons  
-    - ramp: slecect automatic voltage power selection after power loss    
-      ![ramp](./img/icon-ramp.jpg)
-	- switch: select automatic output enabling after power loss  
-	  ![switch](./img/icon-switch.jpg)
-    - regulator: regulator setttings  
-      ![regulator](./img/icon-regulator.jpg)
-    - asterisk: brightness selection  
-      ![brightness0](./img/icon-brightness.jpg)
-	
-
-
-#### startup message
-On startup the system will display a version and build message before starting in main menu.
-```
- PD/PPS-Controller  
-====================
-Ver. :   3.3 nbl    
-Build:   mmm dd yyyy
-```
-
-after initializiation is completed the main menu will be displayed
-
-#### main menu
-```
-Mode (x:...) [UI^] ! 
-     UU.UU V  I.II A
-OUT  UU.UU V  I.II A
-[i  i  i  i  i]  (i)
-```
-last line i: menu icons
-
-to select a menu item press the button, a cursor will appear. Turn rotary switch until 
-cursor is at the position of the desired item. Press button again to select the menu.
-In this menu the "V" and "A" in the second line are menu items too.
-Select to adjust desired voltage or current.
-
-- first line  
-The currently selcted profile type will be displayed.  
-in this case it is a fixed profile.
-If an augmented profile is selcted the selected regulater mode will be displayed at the end
-of the line.
-    - U means constant voltage
-    - UI means constant voltage and current limited by SW and PS hardware.
-    - UI^ means constant voltage and current limited in SW, no hw support
-	- an exclamation mark will be displayed when current limiting is active
-- second line  
-The selected voltage and current rating is displayed.
-- third line  
-The output voltage and current is displayed  
-- fourth line  
-The available menu item are listed in []. The current menu is displayed at the end of the line in ()  
-    1. icon: switch  
-    select to turn the output on or off.
-    2. icon: flash  
-    select to enter the profile menu
-    3. icon: wrench  
-    select to enter settings menu
-    4. icon: check mark  
-    when voltage or current settings have been modified only icon 4 and 5 ar active. One need to 
-    either accept or discard the changes
-    5. icon: cancel "x" 
-    see icon 4
-    6. icon: ramp
-    Current menu. The ramp icon indicates the increment or decrement function of the main menu.
-
-#### profile menu
-this menu is used to select the desired PD profile.
-```
- # 1 / n  (...)     
-U= UU.UU V - UU.UU V
-I=  I.II A max      
-[i  i  i]        (i)
-```
-
-last line i: menu icons
-
-
-to select a profile press the button navigate to the "#" symbol in the first line and press 
-again to enter profile selection. Turning will step through avalabla profiles. To select a 
-profile press again and navigate to the check mark in the buttom line or select "x" to abort.
-
-- first line  
-The number of the current profile, the total number of profiles and the profile type (fixed, augmented ...)
-is displayed   
-- second line  
-The nominal voltage or voltage range of the current profile is displayed  
-- third line  
-The maximum available current in the profile is displayed
-- fourth line 
-The available menu item are listed in []. The current menu is displayed at the end of the line in ()  
-    1. icon: ramp  
-    select to return to main menu.
-    2. icon: check mark  
-    select to accept the new profile
-    3. icon: cancel "x"  
-	select to discard changes  
-    4. icon: flash  
-	current menu. The flash indicates the power profile selction menu
-
-
-#### settings menu
-This menu is used to change the operation mode or calibration value.
-``` 
-(i)=auto  (*)=.    *
-(i)=auto            
-(i)=auto            
-[i  i  i  x]     (i)
-```
-
-[i] or (i) icons in brackets 
-
-- first line  
-    - ramp icon for slecting automatic or manual voltage selction after power loss
-    - star icon for brightness selection as bar between "o" = min and "*" = max
-- second line  	
-  switch icon for selection automatic or manual enabling of the output after power loss
-- third line  
-  regulator icon for enabeling regulator mode: none, CV, CV+CC, CV+CC max 
-- fourth line 
-The available menu item are listed in []. The current menu is displayed at the end of the line in ()  
-    1. icon: ramp  
-    select to return to main menu.
-	2. icon: mark symbol  
-	select to enter calibration menu
-    3. icon: check mark  
-    select to accept the new settings
-    4. icon: cancel "x"  
-	select to discard changes  
-    5. icon: wrench  
-	current menu. The wrench indicates the settings menu
-
-
-#### calibration menu
-```
-I= I.III A:  I.III A
-                    
-                    
-[i  i  i  x]     (i)
-```
-[i] or (i) icons in brackets 
-
-to adjust the current measurment calibration enable output with a load and use a calibrated ampere meter to measure the current.  
-enter the settings menu and go to the calibration menu. enter the measured current and select the checkmark
-it is reccommended to chose a current as high as possible to gain maximum precision.
-
-- first line  
-    - left value
-	  last calibration value (editable)
-    - right value
-	  recent current measurement
-- fourth line 
-The available menu item are listed in []. The current menu is displayed at the end of the line in ()  
-    1. icon: ramp  
-    select to return to main menu.
-	2. icon: dustbin  
-    slect to reset to default state, all manual, default calibration value
-    3. icon: check mark  
-    select to accept the new profile
-    4. icon: cancel "x"  
-	select to discard changes  
-    5. icon: mark symbol  
-	current menu. 
-
-### the software
-the AVR SW is written with Arduino IDE. While developing the SW I found out a few things about the system:
-- The booltloader on AT32U4 devices (such as Leonardo) takes up 4 kB of program space, that's 1/8 of the total
-program space. 
-- the AVR is not specified for 16 MHz @ 3.3 V, the clock has to be scaled down when operating at voltages below 5V
-- the LCD backlight brightness drops sginificantly from 5 V to 3.3 VCC
-- 32 kB is quite small for this project.
-
-after initial succes a quickly ran into issues with FLASH and RAM. You might be able to run the AVR code but I 
-recommend to reduce the functionality the free some memory.
-
-and this leads me to rhe second prototype using ATSAMD21G18.
-
-
-#### build instructions
-The software in the AVR folder is as is. Ther will be no further development in this branch. It kind of work but use 
-at your own risk.
-It only compiles without bootloader, you will need to add the boards.local.txt file from the config folder to
-```
-C:\Users\_user_\AppData\Local\Arduino15\packages\arduino\hardware\avr\1.8.6\
-```
-(at least on windows machines) and select ***Arduino Leonardo w/o bootloader*** from the available boards.
-
-You will need [AVRDUDE](https://github.com/avrdudes/avrdude/) and an [USBasp](https://www.fischl.de/usbasp/)  
-***Hint: be careful when purchasing one of the cheap clones. They often come with outdated SW and will not work. 
-It is no problem to update those but you will need a working USBasp adaptor.***
-
-programmer to flash the SW. For non cli users: [AVRDUESS](https://github.com/ZakKemble/AVRDUDESS) is a great gui for AVRDUDE.   
-You might as well use an Arduino Uno as [USB to ISP bridge](https://docs.arduino.cc/built-in-examples/arduino-isp/ArduinoISP/).  
- 
-## ARM prototype
-After my setbacks I tried an Arduino Zero. This board uses the ATSAMD21G18 which is a Cortex M0+ ARM controller running at 
-48 MHz. It has 256 kB FLASH and 32 kB RAM and lots of interfaces.
-A quick port showed that the SW could be easyly ported from AVR to ARM with almost no issues.
-
-This was the point where we decided to start our first custom PCB avoiding all the problems encountered with the first portotype.
-- the CPU runs at 48 MHz @ 3.3 V, so ther is no need for slowing down the CPU wenn reducing the input voltage
-- a RGB LED was added to indicate the state of operation
-- a CAT4004 was added to control the LCD backlight (we expect a  voltage drop below 4 V Vbus)
-- a LM2664 replaced the Villard / Greinacher circuit and frees a port pin
-- a USB typ C connector is exclusively used for power supply (using VBUS and CC pins)
-- a dedicated protection circuit for USB C pins
-- a micro USB connector is used for SW Update and USB to Serial conversion
-- the core voltage supply is selctable between USB C und micro USB. so SW Update is possible even when no USB C is connected
-- a temperature sensor
-- a hardware UART port (Rx/Tx/GND) at 3.3 V level
-- some testpads
-
-some headache cause the Vcc supply. Most buck converter circuits need some voltage headroom to operate and "feature" an 
-undervoltage lockout circuit. But this is a no go for this circuit. It needs to operate to as low as 3.3 V Vbus. We need an 
-undervoltage bypass curcuit to guarantee operation at 3.3 V Vbus. Otherwise the circuit would lock out when VBUS drops below the 
-thresholt which is typically 4 V - 4.7 V at 3.3 V output.  
-This problem was solved slightly overengineered. We used two 3.3 V regulators which are ored by to ideal diodes.  
-The TPS62932 is configured to output 3.45 V. The UVLO is set to 4.55 V and the Enable is set to 5.06 V. This guarantees 
-the buck converter operate above 5 V and outputs slightly above 3.3 V so the 3.3 V LDO is disabled savely. The LDO is a 
-NCV2951ACDMR2G set to 3.3 V. The dropout voltage is max 450 mV at 100 mA. The current consumption of the circuit is below 50 mA
-so we will have an estimated max dropout of 300 mV.   
-When the input Voltage is above 5.06 V the LDO is idle and the Vcc is 3.45 V. When the input voltag drops below 4.55 V the buck
-converter is disabled and the LDO takes ove, resulting in a Vcc of 3.3 V. When the input voltoge continues to fall, Vcc will 
-drop to ~3 V at 3.3 V Vbus.  
-The CPU will savely operate down to 2.7 V depending on the brownout settings.
-
-### the first ARM hardware
-The PCBA:  
-![bottom](./img/USB-PD-4011A_01.jpg)  
-  
-A working prototype:  
-![top](./img/USB-PD-4011A_02.jpg)   
-
-#### necessary rework on first ARM hardware
-- The output needs a pull down to get a proper zero reading. In order to not to influce the curren measurement the resistor needs 
-to be place between the shunt and the power FET.
-- the series resistors of the RGB LED need to be matched to the relative brightness
-- the current selection of the CAT4004 should be set to ~12 mA / channel, no parallel operation
-- the current for the amber LED shall be set to 2 mA ~750R
-- the three bin jumper should be populatet instead or R25 
-- capacitors have to be added to the rotary encoder switch clock and data pins
-
-### menu modifications
-#### new calibration menu
-```
-Current Calibration 
- internal   I.III A 
- reference  I.III A  
-[i  i  i  x]     (i)
-```
-the current reading and the reference value have been reorganised.
-
-### SAM software
-
-The SW has been refactored and is now USB-PD2. 
-in the first SW the control of the power supply was implemente in the menu class. This is been moved to its own controller class.  
-A header for TODO reminders has been added
-A power supply test class has been added to test profile changes.
-
-#### work in progress
-- a GUI will be added to controll the circuit when a VT100 Terminal is connected to micro USB
-- a simple protocl will be added to control the device directly from SW when connected either to USB or HW UART
-
-
-#### SAM build instructions
-In order to flash the SW for the first time you will need A JTAG Debug Interface such as 
-- [Atmel ICE](https://www.microchip.com/en-us/development-tool/atatmel-ice)
-- [Segger J-Link](https://www.segger.com/debug-trace-embedded-systems/)
-- any other ARM 3.3 V JTAG / SWD debug probe which is supported by Atmel Studio or Arduino IDE.  
-  many cheap ARM debug probes seem to emulate Segger J-Link.   
-  you might find your luck with either the mythological greek female warrior or the Forty Thieves form One Thousand and One Nights. 
-- maybe an Arduino Zero wich has a EDGB (not tested)
-
-You can use Atmel Studio or the Arduino IDE to flash the Arduio Zero bootloader.  
-You can use the Blink Demo as well. Select Sketch -> export binary. The IDE will create a file xxx.ino.with_bootloader.arduino_zero.bin.
-Just flash the file. You might need to copy the fuse bits from an Arduino Zero.  
-There are some samples in the Fuses folder. Some of the fuses are factory tuned and can not be overwritten.
-
-Once the bootloader works you can flash SW using the SAM-BA bootloader. The SW provided by Microchip has a cli 
-which is suitable for all SAM devices supporting SAM-BA and is therefore a bit tricky to use. A much more simple
-tool is [Bossa from Shumatech](https://www.shumatech.com/web/products/bossa).
 
  
 ## comment on USB type C chargers
