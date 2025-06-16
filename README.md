@@ -28,7 +28,16 @@ Interface for USB Type C Chargers with PD/PPS
 	- [arm menu V1.0](./DOC/arm01-menu.md)
 	    - [menu modifications](#menu-modifications)
         - [new calibration menu](#new-calibration-menu)
-
+	- [Terminal menu](./DOC/terminal.md#table-of-contents)
+		- [requirements](./DOC/terminal.md#table-of-contents)
+		- [suitalble terminal programs](./DOC/terminal.md#suitable-terminal-programs)
+		- [screenshots](./DOC/terminal.md#screenshots)
+		  - [PuTTY - PPS, CV CC no load](./DOC/terminal.md#PuTTY-PPS-mode-no-load)
+		  - [PuTTY - PPS, CV CC load](./DOC/terminal.md#PuTTY-PPS-mode-load)
+		  - [PuTTY - PPS, CV CC overload](./DOC/terminal.md#PuTTY-PPS-mode-overload)
+		  - [Kermit](./DOC/terminal.md#kermit)
+		- [Description](./DOC/terminal.md#description)
+		
 - [The software](./DOC/sw.md)
   - [AVR SW](./DOC/sw.md#AVR-SW)
     - [build instructions](./DOC/sw.md#AVR-build-instructions)
