@@ -1,0 +1,113 @@
+# Copyright (c) 2014-2017 Arduino LLC.  All right reserved.
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+# modified for use without RX / TX acticvity lesds
+# Arduino Zero without Rx Tx Leds (Native USB Port)
+# --------------------------------------
+arduino_zero_nrtl_native.name=Arduino Zero without Rx Tx Leds (Native USB Port)
+arduino_zero_nrtl_native.vid.0=0x2341
+arduino_zero_nrtl_native.pid.0=0x804d
+arduino_zero_nrtl_native.vid.1=0x2341
+arduino_zero_nrtl_native.pid.1=0x004d
+arduino_zero_nrtl_native.vid.2=0x2341
+arduino_zero_nrtl_native.pid.2=0x824d
+arduino_zero_nrtl_native.vid.3=0x2341
+arduino_zero_nrtl_native.pid.3=0x024d
+arduino_zero_nrtl_native.upload_port.0.vid=0x2341
+arduino_zero_nrtl_native.upload_port.0.pid=0x804d
+arduino_zero_nrtl_native.upload_port.1.vid=0x2341
+arduino_zero_nrtl_native.upload_port.1.pid=0x004d
+arduino_zero_nrtl_native.upload_port.2.vid=0x2341
+arduino_zero_nrtl_native.upload_port.2.pid=0x824d
+arduino_zero_nrtl_native.upload_port.3.vid=0x2341
+arduino_zero_nrtl_native.upload_port.3.pid=0x024d
+arduino_zero_nrtl_native.upload_port.4.board=arduino_zero_native
+			 
+arduino_zero_nrtl_native.upload.tool=bossac
+arduino_zero_nrtl_native.upload.tool.default=bossac
+arduino_zero_nrtl_native.upload.tool.network=arduino_ota
+arduino_zero_nrtl_native.upload.protocol=sam-ba
+arduino_zero_nrtl_native.upload.maximum_size=262144
+arduino_zero_nrtl_native.upload.maximum_data_size=32768
+arduino_zero_nrtl_native.upload.use_1200bps_touch=true
+arduino_zero_nrtl_native.upload.wait_for_upload_port=true
+arduino_zero_nrtl_native.upload.native_usb=true
+arduino_zero_nrtl_native.build.mcu=cortex-m0plus
+arduino_zero_nrtl_native.build.f_cpu=48000000L
+arduino_zero_nrtl_native.build.usb_product="Arduino Zero"
+arduino_zero_nrtl_native.build.usb_manufacturer="Arduino LLC"
+arduino_zero_nrtl_native.build.board=SAMD_ZERO
+arduino_zero_nrtl_native.build.core=arduino
+arduino_zero_nrtl_native.build.extra_flags=-D__SAMD21G18A__ {build.usb_flags}
+arduino_zero_nrtl_native.build.ldscript=linker_scripts/gcc/flash_with_bootloader.ld
+arduino_zero_nrtl_native.build.openocdscript=openocd_scripts/arduino_zero.cfg
+arduino_zero_nrtl_native.build.variant=arduino_zero_wo_rxtx_led
+arduino_zero_nrtl_native.build.variant_system_lib=
+arduino_zero_nrtl_native.build.vid=0x2341
+arduino_zero_nrtl_native.build.pid=0x804d
+arduino_zero_nrtl_native.bootloader.tool=openocd
+arduino_zero_nrtl_native.bootloader.tool.default=openocd
+arduino_zero_nrtl_native.bootloader.file=zero/samd21_sam_ba.bin
+
+# modified for use without RX / TX acticvity lesds 
+# modified for use with SPI (TX only) on D10-13
+# PD-PPS Controller Mini (Native USB Port)
+# --------------------------------------
+pd-pps-controller-mini.name=PD-PPS Controller Mini (Native USB Port)
+pd-pps-controller-mini.vid.0=0x2341
+pd-pps-controller-mini.pid.0=0x804d
+pd-pps-controller-mini.vid.1=0x2341
+pd-pps-controller-mini.pid.1=0x004d
+pd-pps-controller-mini.vid.2=0x2341
+pd-pps-controller-mini.pid.2=0x824d
+pd-pps-controller-mini.vid.3=0x2341
+pd-pps-controller-mini.pid.3=0x024d
+pd-pps-controller-mini.upload_port.0.vid=0x2341
+pd-pps-controller-mini.upload_port.0.pid=0x804d
+pd-pps-controller-mini.upload_port.1.vid=0x2341
+pd-pps-controller-mini.upload_port.1.pid=0x004d
+pd-pps-controller-mini.upload_port.2.vid=0x2341
+pd-pps-controller-mini.upload_port.2.pid=0x824d
+pd-pps-controller-mini.upload_port.3.vid=0x2341
+pd-pps-controller-mini.upload_port.3.pid=0x024d
+pd-pps-controller-mini.upload_port.4.board=arduino_zero_native
+			 
+pd-pps-controller-mini.upload.tool=bossac
+pd-pps-controller-mini.upload.tool.default=bossac
+pd-pps-controller-mini.upload.tool.network=arduino_ota
+pd-pps-controller-mini.upload.protocol=sam-ba
+pd-pps-controller-mini.upload.maximum_size=262144
+pd-pps-controller-mini.upload.maximum_data_size=32768
+pd-pps-controller-mini.upload.use_1200bps_touch=true
+pd-pps-controller-mini.upload.wait_for_upload_port=true
+pd-pps-controller-mini.upload.native_usb=true
+pd-pps-controller-mini.build.mcu=cortex-m0plus
+pd-pps-controller-mini.build.f_cpu=48000000L
+pd-pps-controller-mini.build.usb_product="PD-PPS Mini"
+pd-pps-controller-mini.build.usb_manufacturer="Arduino LLC"
+pd-pps-controller-mini.build.board=SAMD_ZERO
+pd-pps-controller-mini.build.core=arduino
+pd-pps-controller-mini.build.extra_flags=-D__SAMD21G18A__ {build.usb_flags}
+pd-pps-controller-mini.build.ldscript=linker_scripts/gcc/flash_with_bootloader.ld
+pd-pps-controller-mini.build.openocdscript=openocd_scripts/arduino_zero.cfg
+pd-pps-controller-mini.build.variant=pd-pps-controller-mini
+pd-pps-controller-mini.build.variant_system_lib=
+pd-pps-controller-mini.build.vid=0x2341
+pd-pps-controller-mini.build.pid=0x804d
+pd-pps-controller-mini.bootloader.tool=openocd
+pd-pps-controller-mini.bootloader.tool.default=openocd
+pd-pps-controller-mini.bootloader.file=zero/samd21_sam_ba.bin
+

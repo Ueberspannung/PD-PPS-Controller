@@ -4,21 +4,25 @@ Interface for USB Type C Chargers with PD/PPS
 ##### Table of contents
 - [credits](#credits)
 - [motivation](#motivation)
-- [AVR prototype](./DOC/avr.md#Table-of-contents)
-	- [the hardware](./DOC/#the-hardware)
-		- [voltage and current sensor](./DOC/#voltage-and-current-sensor)
-		- [PD-Micro](./DOC/#PD-Micro)
-		- [FT232](./DOC/#FT232)
-		- [LCD](./DOC/avr.md#LCD)
-		- [switch](./DOC/avr.md/#switch)
-	- [the features](./DOC/avr.md/#the-features)
-		- [basic features](./DOC/avr.md/#basic-features)
-		- [advanced features](./DOC/avr.md/#advanced-features)
-- [first ARM prototype](./DOC/arm01.md#Table-of-contents)
-	- [the first ARM hardware](./DOC/arm01.md#the-first-ARM-hardware)
-    - [necessary rework on first ARM hardware](./DOC/arm01.md#necessary-rework-on-first-ARM-hardware)
+- [hardware](#hardware)
+	- [AVR prototype](./DOC/avr.md#Table-of-contents)
+		- [the hardware](./DOC/#the-hardware)
+			- [voltage and current sensor](./DOC/#voltage-and-current-sensor)
+			- [PD-Micro](./DOC/#PD-Micro)
+			- [FT232](./DOC/#FT232)
+			- [LCD](./DOC/avr.md#LCD)
+			- [switch](./DOC/avr.md/#switch)
+		- [the features](./DOC/avr.md/#the-features)
+			- [basic features](./DOC/avr.md/#basic-features)
+			- [advanced features](./DOC/avr.md/#advanced-features)
+	- [first ARM prototype](./DOC/arm01.md#Table-of-contents)
+		- [the first ARM hardware](./DOC/arm01.md#the-first-ARM-hardware)
+		- [necessary rework on first ARM hardware](./DOC/arm01.md#necessary-rework-on-first-ARM-hardware)
+	- [the mini](#the-mini)
+		- [new hardware features](#features)
 		
-- [The menu]
+		
+- [The menu][#menu]
 	- [avr menu](./DOC/avr-menu.md)
 		- [menu icons](./DOC/avr-menu.md#menu-icons)
 		- [main menu](./DOC/avr-menu.md#main-menu)
@@ -45,7 +49,8 @@ Interface for USB Type C Chargers with PD/PPS
     - [first ARM prototype SW](./DOC/sw.md#first-ARM-prototype-SW) 
     - [work in progress](./DOC/sw.md#work-in-progress)
 	- [build instructions](./DOC/sw.md#first-ARM-prototyp-SW-build-instructions)
-	
+  - [unified sw](./DOC/sw.md#unified-sw)
+
 - [comment on USB type C chargers](#comment-on-USB-type-C-chargers)
     - [tested chargers](#tested-chargers)
     - [issues](#issues)
@@ -131,6 +136,35 @@ rotary switch as UI?.
 
 And this leads me to my first prototype.
 
+## hardware
+### AVR prototype
+![AVR prototype](./img/PD-PPS-Controller.jpg) 	
+[AVR prototype](./DOC/avr.md#Table-of-contents)
+### first ARM prototype
+![first ARM prototype](./img/arm01a.jpg) ![first ARM prototype](./img/arm01b.jpg)
+[first ARM prototype](./DOC/arm01.md#Table-of-contents)
+
+
+### the mini
+
+- [avr menu](./DOC/avr-menu.md)
+	- [menu icons](./DOC/avr-menu.md#menu-icons)
+	- [main menu](./DOC/avr-menu.md#main-menu)
+	- [profile menu](./DOC/avr-menu.md#profile-menu)
+	- [settings menu](./DOC/avr-menu.md#settings-menu)
+	- [calibration menu](./DOC/avr-menu.md#calibration-menu)
+- [arm menu V1.0](./DOC/arm01-menu.md)
+    - [menu modifications](#menu-modifications)
+    - [new calibration menu](#new-calibration-menu)
+- [Terminal menu](./DOC/terminal.md#table-of-contents)
+	- [requirements](./DOC/terminal.md#table-of-contents)
+	- [suitalble terminal programs](./DOC/terminal.md#suitable-terminal-programs)
+	- [screenshots](./DOC/terminal.md#screenshots)
+	  - [PuTTY - PPS, CV CC no load](./DOC/terminal.md#PuTTY-PPS-mode-no-load)
+	  - [PuTTY - PPS, CV CC load](./DOC/terminal.md#PuTTY-PPS-mode-load)
+	  - [PuTTY - PPS, CV CC overload](./DOC/terminal.md#PuTTY-PPS-mode-overload)
+	  - [Kermit](./DOC/terminal.md#kermit)
+	- [Description](./DOC/terminal.md#description)
 
  
 ## comment on USB type C chargers

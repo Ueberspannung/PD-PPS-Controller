@@ -6,7 +6,12 @@
  - [first ARM prototype SW](#first-ARM-prototype-SW) 
    - [work in progress](#work-in-progress)
    - [build instructions](#first-ARM-prototyp-SW-build-instructions)
-
+ - [unified sw](#unified sw)
+   - [building the first ARM protype on unified SW]#(#building-the-first-ARM-protype-on-unified-SW)
+   - [building the mini](#building-the-mini)
+   - [modification of board definitions](#modification-of-board-definitions)
+ 
+   
 ## AVR SW
 the AVR SW is written with Arduino IDE. While developing the SW I found out a few things about the system:
 - The booltloader on AT32U4 devices (such as Leonardo) takes up 4 kB of program space, that's 1/8 of the total
@@ -66,13 +71,78 @@ Once the bootloader works you can flash SW using the SAM-BA bootloader. The SW p
 which is suitable for all SAM devices supporting SAM-BA and is therefore a bit tricky to use. A much more simple
 tool is [Bossa from Shumatech](https://www.shumatech.com/web/products/bossa).
 
+## unified sw
+With the rising of the mini it was necessary to do some rework on the sw. The goal is to have one SW for all HW platforms.
+The plattform is selected in the global config file.   
+As mentioned earlier the AVR SW wull not be supported. Only ARM (ATSAMD21G18) based boards will be supported.
+Due to some HW use beyond the ARDUINO ZERO board some modifications to the board definitions and bootloader had to be made.
+The unified SW uses subfolders for the HW layers and other componets.  
+
+### building the first ARM protype on unified SW
+The HW use is fully compatible to the ARDUINO Zero board. no modifications needed.
+Just bild the blink example on the Zero board ord flash the Bootloader directly.  
+uncomment the define  
+```
+#define PD_PPS_CONTROLLER
+```
+in the config.h file. Build for Zero Board, done
 
 
+### building the mini
+#### modification of board definitions
+locate the user specific arduino folder. typicalli its located at
+```
+c:\Users\_user_\AppData\Local\Arduino15\
+```
+on windows machines and
+```
+~home/_user_/-arduino15
+```
+navigate to
+```
+./packages/arduino/hardware/samd/1.8.14/
+```
+copy the boards.local.txt to this folder. If it alread exist just add the contents to 
+your borads.local.txt but be careful not to create double entries.
+
+navigate to 
+```
+variants
+```
+create a folder with the name
+```
+pd-pps-controller-mini
+```
+copy the contents of the
+```
+arduino_zero
+```
+folder to the new created one and copy replace the 
+```
+variant.c
+variant.h
+```
+with those form the repository
+
+when you start your IDE you can select the **PD-PPS Controller Mini (Native USB Port)**
 
 
-
-
-
+#### flashing the bootloader
+you will need to use the modified bootloader 
+```
+samd21_sam_ba_pd_pps_controller_mini
+```
+flash it as described in [first ARM prototyp SW build instructions](#first-ARM-prototyp-SW-build-instructions)
+this fixes three issues:
+ - there is no buildin led
+ - standard bootloader is dual serial and usb,  
+   the serrial pins are in use for different tasks, this causes tghe bootloader to get stuck in serial mode and it will not be acccessible
+ - RX and TX LEDs are not present, pins used for different tasks
+ 
+#### building the mini application
+after the preparations have been done the board should be visible as serial port
+select the Mini and the new serial port. open the ino file and upload  
+done  
 
 
 
