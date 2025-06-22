@@ -143,10 +143,10 @@ And this leads me to my first prototype.
 ### first ARM prototype
 ![first ARM prototype](./img/arm01a.jpg) ![first ARM prototype](./img/arm01b.jpg)
 [first ARM prototype](./DOC/arm01.md#Table-of-contents)
-
-
 ### the mini
+![the mini bottom](./img/mini_top.jpg) ![the mini top](./img/mini_bot.jpg)
 
+## menue
 - [avr menu](./DOC/avr-menu.md)
 	- [menu icons](./DOC/avr-menu.md#menu-icons)
 	- [main menu](./DOC/avr-menu.md#main-menu)

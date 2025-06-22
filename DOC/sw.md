@@ -9,8 +9,11 @@
  - [unified sw](#unified sw)
    - [building the first ARM protype on unified SW]#(#building-the-first-ARM-protype-on-unified-SW)
    - [building the mini](#building-the-mini)
-   - [modification of board definitions](#modification-of-board-definitions)
- 
+   - [modification of board definitions for the mini](#modification-of-board-definitions-for-the-mini)
+     - [creating the mini board](#creating-the-mini-board)
+	 - [description of the mini variant](description of the mini variant)
+   - [flashing the mini bootloader](#flashing-the-mini-bootloader)
+   - [building the mini application](#building-the-mini-application)
    
 ## AVR SW
 the AVR SW is written with Arduino IDE. While developing the SW I found out a few things about the system:
@@ -74,7 +77,7 @@ tool is [Bossa from Shumatech](https://www.shumatech.com/web/products/bossa).
 ## unified sw
 With the rising of the mini it was necessary to do some rework on the sw. The goal is to have one SW for all HW platforms.
 The plattform is selected in the global config file.   
-As mentioned earlier the AVR SW wull not be supported. Only ARM (ATSAMD21G18) based boards will be supported.
+As mentioned earlier the AVR SW will not be supported. Only ARM (ATSAMD21G18) based boards will be supported.
 Due to some HW use beyond the ARDUINO ZERO board some modifications to the board definitions and bootloader had to be made.
 The unified SW uses subfolders for the HW layers and other componets.  
 
@@ -89,7 +92,9 @@ in the config.h file. Build for Zero Board, done
 
 
 ### building the mini
-#### modification of board definitions
+#### modification of board definitions for the mini
+##### creating the mini board
+
 locate the user specific arduino folder. typicalli its located at
 ```
 c:\Users\_user_\AppData\Local\Arduino15\
@@ -126,6 +131,30 @@ with those form the repository
 
 when you start your IDE you can select the **PD-PPS Controller Mini (Native USB Port)**
 
+##### description of the mini variant
+
+variants.h:
+ - the rx and tx led are not used but need to be disabled  
+   PB03 is a button and PA27 is card detect
+ - Serial EDBG interface is not required and disabled  
+   later Serial is remapped to SerialUSB
+ - we need two SPI ports
+   - Port one (SPI = sercom4) is the SPI Header on the Arduino Zero, is maped Pins D10-13 as sercom1  
+   - Port two (SPI1= sercom4) is used for SD Card as done in the mkrZero, PA12-15 and 27 need to modified in vartiants.c 
+ - the extern UART Serial definion needs to be removed in order to be replaced with USB
+ - the Serial has to be defined as SerialUSB to make Serial gloaballe availabe as USB Serial
+ 
+variants.cpp:
+ - PA14 (SS) is redefined as simple IO, no interrupts needed
+ - PA15 (MISO) is redefined to sercom_alt
+ - PA18,16,19 (D10-12) are redefined to use as SPI (SS, MOSI) MISO not used for display commuinication, used as io
+ - PA17 redefined for SPI Display
+ - PA12 moved from SPI Haeder to SD-Card
+ - PB03 redefined as IO with interrupt (button)
+ - PA27 redefined as IO without interrupt, input only (card detect)
+ - PA13 assigned to sercom4 (SD-Card)
+ - definitions of serial removed, now mapped to SerialUSB
+ 
 
 #### flashing the bootloader
 you will need to use the modified bootloader 
@@ -133,11 +162,17 @@ you will need to use the modified bootloader
 samd21_sam_ba_pd_pps_controller_mini
 ```
 flash it as described in [first ARM prototyp SW build instructions](#first-ARM-prototyp-SW-build-instructions)
-this fixes three issues:
- - there is no buildin led
- - standard bootloader is dual serial and usb,  
-   the serrial pins are in use for different tasks, this causes tghe bootloader to get stuck in serial mode and it will not be acccessible
- - RX and TX LEDs are not present, pins used for different tasks
+
+two files have been modified / added:
+board_definitions.h:
+ - added include of board_definitions_pd_pps_controller_mini.h for BOARD_ID_pd_pps_controller_mini)
+
+board_definitions_pd_pps_controller_mini.h derived from borad_definitions_arduino_zero:
+ - added SAM_BA_USBCDC_ONLY to prevent bootloader from switching to serial mode, as the orignial serial pins are used for different tasks
+ - changed product string to "PD-PPS Mini"
+ - changed LED Port and pin to red led
+ - removed definitions for Rx/Tx LED (pins are used for button ond card detect)
+ 
  
 #### building the mini application
 after the preparations have been done the board should be visible as serial port
