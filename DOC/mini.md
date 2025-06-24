@@ -1,4 +1,4 @@
-#The Mini
+# The Mini
 
 #### Table of contents
 - [mini prototype](#mini-prototype)
@@ -26,8 +26,10 @@ for details
 ### the mini hardware
 The PCBA:  
 
-![bottom](../img/mini_bot.jpg)  
-![top](../img/mini_top.jpg)  
+![bottom](../img/mini_bot.png)  
+[larger image](../img/mini_bot_large.png)  
+![top](../img/mini_top.png)  
+[larger image](../img/mini_top_large.png)  
 
 for some more images see [the-mini-menu](./mini-menu.md)  
 
