@@ -38,6 +38,9 @@ drop to ~3 V at 3.3 V Vbus.
 The CPU will savely operate down to 2.7 V depending on the brownout settings.
 
 ### the first ARM hardware
+
+[schematics](../SAM/hardware/firs_arm/14011_0_USB-PD_Sch.pdf)
+
 The PCBA:  
 ![bottom](../img/USB-PD-4011A_01.jpg)  
   

@@ -7,11 +7,11 @@
    - [work in progress](#work-in-progress)
    - [build instructions](#first-ARM-prototyp-SW-build-instructions)
  - [unified sw](#unified sw)
-   - [building the first ARM protype on unified SW]#(#building-the-first-ARM-protype-on-unified-SW)
+   - [building the first ARM protype on unified SW](#building-the-first-ARM-protype-on-unified-SW)
    - [building the mini](#building-the-mini)
    - [modification of board definitions for the mini](#modification-of-board-definitions-for-the-mini)
      - [creating the mini board](#creating-the-mini-board)
-	 - [description of the mini variant](description of the mini variant)
+	 - [description of the mini variant](description-of-the-mini-variant)
    - [flashing the mini bootloader](#flashing-the-mini-bootloader)
    - [building the mini application](#building-the-mini-application)
    

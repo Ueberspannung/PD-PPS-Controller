@@ -24,6 +24,9 @@ new board has to be created. See [description of the mini variant](./sw.md#descr
 for details
  
 ### the mini hardware
+
+[schematics](../SAM/hardware/mini/14021_default_pdmicroMini_Sch.pdf)
+
 The PCBA:  
 
 ![bottom](../img/mini_bot.png)  
