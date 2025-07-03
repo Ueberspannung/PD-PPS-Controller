@@ -160,7 +160,7 @@ And this leads me to my first prototype.
 ![first ARM prototype](./img/arm01a.jpg) ![first ARM prototype](./img/arm01b.jpg)
 [first ARM prototype](./DOC/arm01.md#Table-of-contents)
 ### the mini
-![the mini bottom](./img/mini_top.png) ![the mini top](./img/mini_bot.png)
+![the mini](./img/mini_case_grey.jpg)
 [the mini  protoype](./DOC/mini.md#Table-of-contents)
 
  

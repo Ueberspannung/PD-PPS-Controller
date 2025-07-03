@@ -22,6 +22,13 @@ After the [first arm protoype](./arm01.md) we did some major changes
 Some I/Os and interfaces not enabled on the Arduino Zero are used. Therefore a 
 new board has to be created. See [description of the mini variant](./sw.md#description-of-the-mini-variant)
 for details
+
+and here it is: (click on image for larger version)  
+[![top](../img/mini_case_grey.jpg)](../img/mini_case_grey_large.jpg)  
+[![micro usb](../img/mini_case_grey_micro_usb.jpg)](../img/mini_case_grey_micro_usb_large.jpg)  
+[![micro sd](../img/mini_case_grey_micro_sd.jpg)](../img/mini_case_grey_micro_sd_large.jpg)  
+[![ptsm](../img/mini_case_grey_ptsm.jpg)](../img/mini_case_grey_ptsm_large.jpg)  
+
  
 ### the mini hardware
 
@@ -29,7 +36,7 @@ for details
 
 The PCBA:  
 
-![bottom](../img/mini_bot.png)  
+[![bottom](../img/mini_bot.png)  
 [larger image](../img/mini_bot_large.png)  
 ![top](../img/mini_top.png)  
 [larger image](../img/mini_top_large.png)  
