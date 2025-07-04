@@ -47,9 +47,9 @@ The mini is now in serial programming mode.
 command | acces | description
 :-----: | :---: | :----------
 `!`     |   R   | [system state](#system-state-)
-`#`     |  R/W  | [profile number](#number-of-profile)
-`?`     |   R   | [output state](#requesting the output state)
-`C`     |  R/W  | [current calibration](#current-calbration)
+`#`     |  R/W  | [profile number](#number-of-profile-)
+`?`     |   R   | [output state](#output-state)
+`C`     |  R/W  | [current calibration](#current-calbration-)
 
 
 #### system state `!`
@@ -98,7 +98,7 @@ to select the desired profile
 3. **`[val]V`** output voltage
 4. **`[val]A`** output current
 
-#### current calbration
+#### current calbration `C`
 requsting calibration data:
 ```
 <- ?C 
