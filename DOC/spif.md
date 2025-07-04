@@ -48,7 +48,7 @@ command | acces | description
 :-----: | :---: | :----------
 `!`     |   R   | [system state](#system-state-)
 `#`     |  R/W  | [profile number](#number-of-profile)
-`?`     |   R   | [output state](#requesting-the-output-state)
+`?`     |   R   | [output state](#requesting the output state)
 `C`     |  R/W  | [current calibration](#current-calbration)
 
 
@@ -85,7 +85,7 @@ to select the desired profile
 -> [INT] 
 ```
 
-#### requesting the output state
+#### requesting the output state `?` [](#output-state)
 ```
 <- ??
 -> {0|1|!} [val]V [val]V [val]A 
