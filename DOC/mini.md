@@ -23,7 +23,7 @@ Some I/Os and interfaces not enabled on the Arduino Zero are used. Therefore a
 new board has to be created. See [description of the mini variant](./sw.md#description-of-the-mini-variant)
 for details
 
-and here it is: (click on image for larger version)  
+and here it is: (click on image for larger image)  
 [![top](../img/mini_case_grey.jpg)](../img/mini_case_grey_large.jpg)  
 [![micro usb](../img/mini_case_grey_micro_usb.jpg)](../img/mini_case_grey_micro_usb_large.jpg)  
 [![micro sd](../img/mini_case_grey_micro_sd.jpg)](../img/mini_case_grey_micro_sd_large.jpg)  

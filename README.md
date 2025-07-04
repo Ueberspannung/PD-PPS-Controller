@@ -3,6 +3,7 @@ Interface for USB Type C Chargers with PD/PPS
 
 ##### Table of contents
 - [credits](#credits)
+- [About](#About)
 - [motivation](#motivation)
 - [hardware](#hardware)
 	- [AVR prototype](./DOC/avr.md#Table-of-contents)
@@ -49,6 +50,8 @@ Interface for USB Type C Chargers with PD/PPS
 		  - [PuTTY - PPS, CV CC overload](./DOC/terminal.md#PuTTY-PPS-mode-overload)
 		  - [Kermit](./DOC/terminal.md#kermit)
 		- [Description](./DOC/terminal.md#description)
+	
+- [the serial programming interface](./DOC/spif.md)
 		
 - [The software](./DOC/sw.md)
   - [AVR SW](./DOC/sw.md#AVR-SW)
@@ -80,6 +83,34 @@ They did a great job in
 - PCB desgin
 - manufacturing PCBs
 
+## About
+What the heck is a PD-PPS-Controller?  
+This is the mini:  
+![the mini](./img/mini_case_grey.jpg)  
+[click here](./DOC/mini.md#Table-of-contents) for details on the mini or continue reading 
+for more information. There are other versions udner development, see [motivation](#motivation)
+and [hardware](#hardware) for an in depth coverage.   
+A USB C charger with Power delivery capabilities has some nice and very useful features:  
+The output voltage as not fixed to 5 V but will be negotiated between source (the charger) 
+and the sink (your device).  
+The most common features are the fixed profiles with fixed voltages of 5 V, 9 V, 12 V, 15 V
+and 20 V with up to 5 A (100 W chargers).  
+This covers the most common voltages of wall mount power supplies.  
+Part of the power delivery standard are the augmented profles or programmable power supply.
+These profile offers an adjustable voltage from as low as 3.3 V up to 21 V and 5 A maximum 
+current. Adjustable in 20 mV steps and programmable current limit from 1 A to 5 A in 50 mA
+increments.
+This is allmost as good as a lab power supply. All you need ist a device which is capable 
+of communicating your request to the PD source.  
+Whit PD 3.1 the Power Rating has even increased to 140 W using up to 28 V with 5 A. 
+Unfortunatly this is currently out of the scope of this project.  
+The PD-PPS_Controller does not only request the desired voltage and current from the PD
+source, it implements a closed loop controller to keep the output voltage within 20 mV of
+the requested voltage with a precise constant current mode when operatet in PPS mode.
+The PD-PPS-Controller offers a simple [UI](./DOC/mini-menu.md) for direct control, a
+[Terminal UI](./DOC/terminal.md#table-of-contents) and a [serial programming interface](./DOC/spif.md)
+for integration in your own applications.
+
 
 ## motivation
 There are some interesting boards out there to trigger USB Type C power delivery sources. Such as the ZY12PDN.  
@@ -92,7 +123,7 @@ is programmable either through resistors or a microcontroller using I2C.
 
 Unfortunatly this is well  below the capabilities of a PD 3.0 compliant power supply. All these modules use only so 
 called fixed profiles. But there is the PPS Mode (porgrammable power supply). This uses the augmented profile.
-The Augmented Profiles is spacified from 3.3 V to 21 V and up to 5 A. The voltage can be selected in 20 mV steps
+The Augmented Profiles is specified from 3.3 V to 21 V and up to 5 A. The voltage can be selected in 20 mV steps
 and the maximum current can be selected in 50 mA steps.  
 
 And here is my idea: Have you ever used one of those chunky lab power supplies eating up most space on your desk?
@@ -131,13 +162,15 @@ just enough but we can easyly do better. When using a dedicated ADC e.g. The INA
 We can improve the precision to 4 mV. This is well below the 20 mV stepsize. An we get an current sensor on top.  
 ***Warning on current sensor ACS712***  
 The ACS 712 is an easy to use isolated current sensor. But:  
-- there are many Fake modules out ther using an relabled ACS704. The fake chips can easyly be found by measuring
-cuntinuity between pin 5 and 6. In the ACS704 those pins are shorted while in the ACS712 they are not. The ACS712
-has improved stability and nois reduction.
+- there are many Fake modules out there using an relabled ACS704. The fake chips can easyly be found by measuring
+continuity between pin 5 and 6. In the ACS704 those pins are shorted while in the ACS712 they are not. The ACS712
+has improved stability and noise reduction.
 - the ACS712 is very sensitive to VCC stability. 
 - the ACS712 is bidirectional and therefore centered aroud 2.5 V for 0 A 
 - the ACS712 uses magnetic coupling therefore is sensitive to external magnetic fields and may need complex
 magnetic shielding  
+- the ACS712 is very sensitive on the VCC side. It need a stable reliable supply voltage. with in the specified range.
+
 
   
 
