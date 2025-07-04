@@ -46,13 +46,13 @@ The mini is now in serial programming mode.
 
 command | acces | description
 :-----: | :---: | :----------
-`!`     |   R   | [system state](#system-state)
+`!`     |   R   | [system state](#system-state-)
 `#`     |  R/W  | [profile number](#number-of-profile)
-`?`     |   R   | [output state](#output-state)
-`C`     |  R/W  | [current calibration](#ccurrent-calbration)
+`?`     |   R   | [output state](#requesting-the-output-state)
+`C`     |  R/W  | [current calibration](#current-calbration)
 
 
-#### system state `!` {#system-state}
+#### system state `!`
 ```    
 <- ?!
 -> {ready|busy [info]}
@@ -70,7 +70,7 @@ command | acces | description
     - **`waiting for PD`** initial handshake with PD source
     - **`waiting for change`** profile / voltage change ongoing
 
-#### number of profile `#` {#number-of-profile}
+#### number of profile `#`
 to query the currently selected profile
 ```
 <- ?#
@@ -85,7 +85,7 @@ to select the desired profile
 -> [INT] 
 ```
 
-#### requesting the output state {#output-state}
+#### requesting the output state
 ```
 <- ??
 -> {0|1|!} [val]V [val]V [val]A 
