@@ -6,16 +6,17 @@
 - [command structure](#command-structure)
   - [request](#request)
   - [reply](#reply)
+  - [naming conventions](#naming-conventions)
 - [commands](#commands)
   - [system state](#system-state-)
   - [profile number](#number-of-profile-)
   - [output state](#requesting-the-output-state-)
-  - [current calibration](#current-calbration-)
+  - [current calibration](#current-cailbration-)
   - [erase settings](#erase-settings-)
   - [find closest profile](#find-closest-fix-voltage-profile-)
-  - [avialable current and current limit](avialable-current-and-current-limit)
+  - [avialable current and current limit](#avialable-current-and-current-limit-)
   - [number profiles](#request-number-of-available-profiles-)
-  - [profile data](#request-profile-data)
+  - [profile data](#request-profile-data-)
   - [output switch](#operate-output-switch-)
   - [controller operating mode](#controller-operating-mode-)
   - [start up parameter](#start-up-parameter-)
@@ -37,20 +38,20 @@ The mini is now in serial programming mode.
 
 ## command structure
 ### request
-1. 2 digiti ASCII command code
-	a. `?` as first character to request information
-	b. `!` as first character to change settings
-2. separator (SPACE)
-3. parmater
-    a. numerical parameter ('0'-'9' / '.') 
-	b. text (ASCII)
-4. terminator (\r)
+1. 2 digiti ASCII command code  
+	a. `?` as first character to request information  
+	b. `!` as first character to change settings  
+2. separator (SPACE)  
+3. parmater  
+    a. numerical parameter ('0'-'9' / '.')  
+	b. text (ASCII)  
+4. terminator (\r)  
 
 ### reply
 1. single value (numerical or ASCII) or multiple values separated by (SPACE)
 2. terminator (\r)
 
-### naming conventions:
+### naming conventions
 - {a|b|c} Optionsfeld "a" "b" oder "c"
 - [val] numerischer Wert ggf mit Vorzeichen und '.'
 - [int] ganzzahliger Wert ggf mit Vorzeichen
@@ -65,11 +66,11 @@ command | acces | description
 `!`     |   R   | [system state](#system-state-)
 `#`     |  R/W  | [profile number](#number-of-profile-)
 `?`     |   R   | [output state](#requesting-the-output-state-)
-`C`     |  R/W  | [current calibration](#current-calbration-)
+`C`     |  R/W  | [current calibration](#current-calibration-)
 `E`     |   W   | [erase settings](#erase-settings-)
 `F`     |   R   | [find closest profile](#find-closest-fix-voltage-profile-)
-`I`     |  R/W  | [avialable current and current limit](avialable-current-and-current-limit)
-`N`     |   R   | [number profiles](#request-number-of-available-profiles-) and [profile data](#request-profile-data)
+`I`     |  R/W  | [avialable current and current limit](#avialable-current-and-current-limit-)
+`N`     |   R   | [number profiles](#request-number-of-available-profiles-) and [profile data](#request-profile-data-)
 `O`     |  R/W  | [output switch](#operate-output-switch-)
 `R`     |  R/W  | [controller operating mode](#controller-operating-mode-)
 `S`     |  R/W  | [start up parameter](#start-up-parameter-)
@@ -123,7 +124,7 @@ to select the desired profile
 3. **`[val]V`** output voltage
 4. **`[val]A`** output current
 
-#### current calbration `C`
+#### current calibration `C`
 requsting calibration data:
 ```
 <- ?C 
