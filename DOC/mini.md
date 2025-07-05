@@ -1,5 +1,7 @@
 # The Mini
 
+![the mini](../img/mini_case_grey_thumb.jpg)
+
 #### Table of contents
 - [mini prototype](#mini-prototype)
   - [the mini hardware](#the-mini-ARM-hardware)

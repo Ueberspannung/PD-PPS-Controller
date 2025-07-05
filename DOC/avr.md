@@ -1,5 +1,8 @@
 ## avr prototype
 
+![avr](../img/PD-PPS-Controller_thumb.jpg)
+
+
 ##### Table of contents
 - [the hardware](#the-hardware)
 	- [voltage and current sensor](#voltage-and-current-sensor)
@@ -13,7 +16,7 @@
 
 
 ### the hardware
-![PD-PPS-COntroller](./img/PD-PPS-Controller.jpg)  
+![PD-PPS-COntroller](../img/PD-PPS-Controller.jpg)  
 
 and here are the components clockwise beginnign with the upper left.  
 

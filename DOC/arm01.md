@@ -1,5 +1,7 @@
 # ARM Prototype V1.0
 
+![first arm](../img/USB-PD-4011A_02_thumb.jpg)
+
 #### Table of contents
 - [ARM prototype](#ARM-prototype)
   - [the first ARM hardware](#the-first-ARM-hardware)

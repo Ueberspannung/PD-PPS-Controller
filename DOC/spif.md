@@ -11,18 +11,18 @@
   - [system state](#system-state-)
   - [profile number](#number-of-profile-)
   - [output state](#requesting-the-output-state-)
-  - [current calibration](#current-cailbration-)
-  - [erase settings](#erase-settings-)
-  - [find closest profile](#find-closest-fix-voltage-profile-)
-  - [avialable current and current limit](#avialable-current-and-current-limit-)
-  - [number profiles](#request-number-of-available-profiles-)
-  - [profile data](#request-profile-data-)
-  - [output switch](#operate-output-switch-)
-  - [controller operating mode](#controller-operating-mode-)
-  - [start up parameter](#start-up-parameter-)
-  - [profile type](#profile-type-)
-  - [voltage setting and available voltage](#voltage-setting-and-available-voltage-)
-  - [program version](#program-version-)
+  - [current calibration](#current-cailbration-c)
+  - [erase settings](#erase-settings-e)
+  - [find closest profile](#find-closest-fix-voltage-profile-f)
+  - [avialable current and current limit](#avialable-current-and-current-limit-i)
+  - [number profiles](#request-number-of-available-profiles-n)
+  - [profile data](#request-profile-data-n)
+  - [output switch](#operate-output-switch-o)
+  - [controller operating mode](#controller-operating-mode-r)
+  - [start up parameter](#start-up-parameter-s)
+  - [profile type](#profile-type-t)
+  - [voltage setting and available voltage](#voltage-setting-and-available-voltage-u)
+  - [program version](#program-version-v)
 
 ## interface parameters
 The serial communication parameters should be set to 115200 8N1. This is a USB 
@@ -66,17 +66,17 @@ command | acces | description
 `!`     |   R   | [system state](#system-state-)
 `#`     |  R/W  | [profile number](#number-of-profile-)
 `?`     |   R   | [output state](#requesting-the-output-state-)
-`C`     |  R/W  | [current calibration](#current-calibration-)
-`E`     |   W   | [erase settings](#erase-settings-)
-`F`     |   R   | [find closest profile](#find-closest-fix-voltage-profile-)
-`I`     |  R/W  | [avialable current and current limit](#avialable-current-and-current-limit-)
-`N`     |   R   | [number profiles](#request-number-of-available-profiles-) and [profile data](#request-profile-data-)
-`O`     |  R/W  | [output switch](#operate-output-switch-)
-`R`     |  R/W  | [controller operating mode](#controller-operating-mode-)
-`S`     |  R/W  | [start up parameter](#start-up-parameter-)
-`T`     |   R   | [profile type](#profile-type-)
-`U`     |  R/W  | [voltage setting and available voltage](#voltage-setting-and-available-voltage-)
-`V`     |   R   | [program version](#program-version-)
+`C`     |  R/W  | [current calibration](#current-calibration-c)
+`E`     |   W   | [erase settings](#erase-settings-e)
+`F`     |   R   | [find closest profile](#find-closest-fix-voltage-profile-f)
+`I`     |  R/W  | [avialable current and current limit](#avialable-current-and-current-limit-i)
+`N`     |   R   | [number profiles](#request-number-of-available-profiles-n) and [profile data](#request-profile-data-n)
+`O`     |  R/W  | [output switch](#operate-output-switch-o)
+`R`     |  R/W  | [controller operating mode](#controller-operating-mode-r)
+`S`     |  R/W  | [start up parameter](#start-up-parameter-s)
+`T`     |   R   | [profile type](#profile-type-t)
+`U`     |  R/W  | [voltage setting and available voltage](#voltage-setting-and-available-voltage-u)
+`V`     |   R   | [program version](#program-version-v)
 
 #### system state `!`
 ```    
@@ -305,3 +305,5 @@ get max. available voltage at a given current limit
 <- ?V
 -> [Ver] [Built]
 ```	
+
+[home](../README.md)

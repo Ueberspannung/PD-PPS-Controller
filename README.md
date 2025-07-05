@@ -1,6 +1,8 @@
 # PD-PPS-Controller
 Interface for USB Type C Chargers with PD/PPS
 
+![the mini](./img/mini_case_grey_thumb.jpg)
+
 ##### Table of contents
 - [credits](#credits)
 - [About](#About)
