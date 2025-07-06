@@ -2,6 +2,10 @@
 
 #### Table of contents
 - [inteface parameters](#interface-parmeters)  
+- [the catch with Arduino Windows and RS232 over USB](#the-catch-with-Arduino-Windows-and-RS232-over-USB)
+  - [windows sucks](#windows-sucks)
+  - [the delay function](#the-delay-function)
+  - [the solution](#the-solution)
 - [connecting to the mini](#connecting-to-the-mini)
 - [command structure](#command-structure)
   - [request](#request)
@@ -28,10 +32,55 @@
 The serial communication parameters should be set to 115200 8N1. This is a USB 
 serial device so any parameter should do.  
 
+## the catch with Arduino Windows and RS232 over USB
+When trying to identify if a serial connection is estaqblished or not I discoverd two
+quite annoying flaws.
+### windows sucks
+according to the arduino documentation it should be as ease as a simple if statement
+``` 
+if (SerialUSB)
+{	
+    /*
+        serial connection has been established
+		do communication
+	*/
+}
+else
+{
+    /*
+	    no serial connection
+		do other stuff
+	*/
+}
+```
+... and yes, it works, but not quite as expected.  
+When opening a serial port on the windows machine the arduino detects the open port and
+one can do their stuff.  
+But when the port is closed on the windows machine it will stay open on the arduino.  
+By the way trying this on a linux machine the port is detected open and closed on 
+the arduino as expected.
+
+### the delay function
+when searching for USB CDC and arduino core libraries I discoverd that they added a 
+delay in the SerialUSB call. Its in Serial_::operator bool() in CDC.cpp. Each call to 
+SerialUSB takes 10 ms blocking. As the FUSB302 needs to be serviced every 10 ms this 
+is a no go.
+
+### the solution
+most Terminal programs control the DTR line upon establishing a connection. A call to 
+the SerialUSB.dtr() can be used even if there is no serial connection. So switching
+between local and remote mode is done by using the dtr line.
+
 
 ## connecting to the mini
+> [!IMPORTANT]  
+> when connecting to the serial interface, it is important to raise the DTR line. This
+> will indicate that there is a real connection and the module will display `REMOTE`.  
+> Wenn disabling the DTR line the module will switch to local mode and display the
+> menue icons instaed of `REMOTE`.
+
 when a serial commection is establishe, the mini will try to identify a VT100 
-terminal. This is doen using th ESC[C command. It will try 6 times. Just ignore 
+terminal. This is doen using th `ESC[C` command. It will try 6 times. Just ignore 
 these commands and flush the input buffer ~1s after the connection has been established.  
 The mini is now in serial programming mode.  
 
