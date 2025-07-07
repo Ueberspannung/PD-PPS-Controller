@@ -6,6 +6,15 @@ Interface for USB Type C Chargers with PD/PPS
 - mini: 35 mm x 21 mm x 12 mm (length x width x heigth)
 - 0.96 color display (160 x 80 px)
 - only 3 buttons to operate 
+- operation through 4 menus
+  - voltage / current selection
+  - power profile selection
+  - setup
+	- automatic restauration of last settings after power on
+	- automatic output enable upon succesfull restauration of last settings
+	- regulation mode off = done by power source or 3 different point of load controll loops
+	- brightnes controll
+  - calibration option for current measurement
 - RGB LED for output state
 - remote UI via VT100 serial terminal
 - serial programming interface for intergration in controll applications
