@@ -1,7 +1,27 @@
 # PD-PPS-Controller
 Interface for USB Type C Chargers with PD/PPS
 
+## the lab power supply to go
 ![the mini](./img/mini_case_grey_thumb.jpg)
+- mini: 35 mm x 21 mm x 12 mm (length x width x heigth)
+- 0.96 color display (160 x 80 px)
+- only 3 buttons to operate 
+- RGB LED for output state
+- remote UI via VT100 serial terminal
+- serial programming interface for intergration in controll applications
+- SD Card for future use (eg. data logging)
+- all essential data at a glance
+  - operating mode
+  - set voltage / current
+  - output voltage / current
+  - input voltage
+- fixed voltage 5 V / 9 V / 12 V / 15 V / 20 V, up to 3 A / 5 A 
+- adjustable voltage 3.3 V - 21 V up to 5 A 
+- adjustable current limit 50 mA to 5 A 
+- beeper (futer use)
+- IMU (futere use)
+- temperature sensor (future use)
+- audio decoder (future use)
 
 ##### Table of contents
 - [credits](#credits)
