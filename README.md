@@ -10,8 +10,8 @@ Interface for USB Type C Chargers with PD/PPS
   - voltage / current selection
   - power profile selection
   - setup
-	- automatic restauration of last settings after power on
-	- automatic output enable upon succesfull restauration of last settings
+	- automatic restoration of last settings after power on
+	- automatic output enable upon succesfull restoration of last settings
 	- regulation mode off = done by power source or 3 different point of load controll loops
 	- brightnes controll
   - calibration option for current measurement
