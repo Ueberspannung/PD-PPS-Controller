@@ -1,6 +1,7 @@
 # The Mini
 
 ![the mini](../img/mini_case_grey_thumb.jpg)
+![the mini](../img/mini_case_clear_thumb.jpg)
 
 #### Table of contents
 - [mini prototype](#mini-prototype)
@@ -30,18 +31,16 @@ and here it is: (click on image for larger image)
 [![micro usb](../img/mini_case_grey_micro_usb.jpg)](../img/mini_case_grey_micro_usb_large.jpg)  
 [![micro sd](../img/mini_case_grey_micro_sd.jpg)](../img/mini_case_grey_micro_sd_large.jpg)  
 [![ptsm](../img/mini_case_grey_ptsm.jpg)](../img/mini_case_grey_ptsm_large.jpg)  
-
+[![clear](../img/mini_case_clear.jpg)](../img/mini_case_clear_large.jpg)
  
 ### the mini hardware
 
 [schematics](../SAM/hardware/mini/14021_default_pdmicroMini_Sch.pdf)
 
-The PCBA:  
+The PCBA:  (click on image for larger image)
 
-[![bottom](../img/mini_bot.png)  
-[larger image](../img/mini_bot_large.png)  
-![top](../img/mini_top.png)  
-[larger image](../img/mini_top_large.png)  
+[![bottom](../img/mini_bot.png)](../img/mini_bot_large.png)
+[![top](../img/mini_top.png)](../img/mini_top_large.png)  
 
 for some more images see [the-mini-menu](./mini-menu.md)  
 

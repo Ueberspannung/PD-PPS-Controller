@@ -114,7 +114,7 @@ command | acces | description
 :-----: | :---: | :----------
 `!`     |   R   | [system state](#system-state-)
 `#`     |  R/W  | [profile number](#number-of-profile-)
-`?`     |   R   | [output state](#requesting-the-output-state-)
+`?`     |  R/W  | [output state](#requesting-the-output-state-)
 `C`     |  R/W  | [current calibration](#current-calibration-c)
 `E`     |   W   | [erase settings](#erase-settings-e)
 `F`     |   R   | [find closest profile](#find-closest-fix-voltage-profile-f)
@@ -149,21 +149,27 @@ command | acces | description
 to query the currently selected profile
 ```
 <- ?#
--> [INT] 
+-> ?# [INT] 
 ```
 - **`[INT]`** number of current profile  
-  if more than one augmented profile is availabe only the first will be reported for detials see [get profile data](#get-profile-data)
+  if more than one augmented profile is availabe only the first will be reported for detials
+  see [get profile data](#get-profile-data)
 
 to select the desired profile
 ```
 <- !# n
--> [INT] 
+-> !# [INT] 
 ```
+> [!NOTE]
+> instead of the requested selected profile one might get a busy message, in this case the 
+> command is still pending and needs to be finished by polling the currently selected profile 
+> using `?#`
+
 
 #### requesting the output state `?`
 ```
 <- ??
--> {0|1|!} [val]V [val]V [val]A 
+-> ??{0|1|!} [val]V [val]V [val]A 
 ```
 1. **`{0|1|!}`**  
    **`0`** outpunt off  
@@ -173,16 +179,27 @@ to select the desired profile
 3. **`[val]V`** output voltage
 4. **`[val]A`** output current
 
+#### requesting periodic output state messages
+```
+<- !?
+<- !? [INT]ms 
+-> ?? [INT]ms 
+```
+This command sets the intervall for periodic output state messages.  
+The valid range is 100-65535 ms.  
+Any value below 100 ms disables the function (this includes no value).  
+
+
 #### current calibration `C`
 requsting calibration data:
 ```
 <- ?C 
--> [val]A [val]A (interne Messwert, Referenzwert)
+-> ?C [val]A [val]A (interne Messwert, Referenzwert)
 ```
 setting calibration data:
 ```
 <- !C [val]A [val]A (interne Messwert, Referenzwert)
--> [val]A [val]A (interne Messwert, Referenzwert)
+-> !C [val]A [val]A (interne Messwert, Referenzwert)
 ```
 1. **`[val]A`**   
    internal current value
@@ -192,16 +209,16 @@ setting calibration data:
 #### erase settings `E`
 ```
 	<- !E
-	-> busy erasing parameter 0%
+	-> !E busy erasing parameter 0%
 ```
-use [system state command `?`](#system-state-) to query the progress.
+use [system state command `?`](#system-state-) or `?E` to query the progress. 
 needs to be executed before calibration
 
 #### find closest fix voltage profile `F`
 use this command to find the closest fixed voltage profile which is less or euqal to the requested voltage.
 ```
 <- ?F [val]V 
--> [val]V
+-> ?F [val]V
 ```
 - in request : desired voltage
 - in reply: closest voltage
@@ -215,7 +232,7 @@ example:
 query the max. availe current (fix profile) or the programmed current limit (augmented profile)
 ```
 <- ?I 
--> [val]A
+-> ?I [val]A
 ```
 
 somtimes a manufacturer implements multiple augmented profiles with different voltage range and
@@ -224,13 +241,13 @@ the PD-PPS-Controller reports treats this profiles as one. to get the auvailabel
 certain voltage just at the voltage of interest to the request.
 ```
 <- ?I [val]V	
--> [val]A
+-> ?I [val]A
 ```
 
 to set a certain current limit in PPS mode add the desired current to the set current command.
 ```
 <- !I [val]A 
--> [val]A
+-> !I [val]A
 ```
 the returned current is the actually set value.  
 > [!NOTE]  
@@ -242,7 +259,7 @@ the returned current is the actually set value.
 #### request number of available profiles `N`
 ```
 <- ?N
--> [INT] 
+-> ?N [INT] 
 ```
 - `[INT]` number of available profiles, 1-7, 0 if no PD source has been detected 
 
@@ -250,9 +267,7 @@ the returned current is the actually set value.
 
 ```
 <- ?N [n] (n: Nummer des Profils)
--> {FIX|AUG|BAT|VAR} [profile data]
--> BAT [val]V - [val]V [val]W (Battery Profil)
--> VAR [val]V - [val]V [val]A (Variable Profil, replace by AUG)
+-> ?N #[n]: {FIX|AUG|BAT|VAR} [profile data]
 ```
 - `FIX [profile data]`
    - `[val]V [val]A`  
@@ -271,12 +286,12 @@ the returned current is the actually set value.
 switch output
 ```
 <- !O {0|1}
--> {0|1}
+-> !O {0|1}
 ```
 request output state
 ```
 <- ?O
--> {0|1}
+-> ?O {0|1}
 ```
 
 #### controller operating mode `R`
@@ -286,12 +301,12 @@ request output state
 set controller operating mode
 ```
 <- !R {OFF|CV|CVCC|CVCC^}
--> {OFF|CV|CVCC|CVCC^}
+-> !R {OFF|CV|CVCC|CVCC^}
 ```
 request controler operating mode
 ```
 <- ?R
--> {OFF|CV|CVCC|CVCC^}
+-> ?R {OFF|CV|CVCC|CVCC^}
 ```
 - `OFF` controller is of output relies entirely on PD source
 - `CV` PD source is adjusted to match the output voltage to the set value, 
@@ -309,14 +324,12 @@ request controler operating mode
 request start up parameter
 ```
 	<- ?S
-	<- !S {OFF|SET|ON}
-	-> {OFF|SET|ON}
+	-> ?S {OFF|SET|ON}
 ```
 set start up parameter
 ```
-	<- ?S
 	<- !S {OFF|SET|ON}
-	-> {OFF|SET|ON}
+	-> !S {OFF|SET|ON}
 ```
 - `OFF` set 5 V fix profile with output off
 - `SET` restore last power settings with output off
@@ -326,7 +339,7 @@ set start up parameter
 request the currently active profile type
 ```
 <- ?T 
--> {N/A|FIX|PPS}
+-> ?T {N/A|FIX|PPS}
 ```
 - `N/A` PD-PPS_Controller is sourced by a non PD source
 - `FIX` fixed voltage profile is active
@@ -336,23 +349,23 @@ request the currently active profile type
 request currently set voltage works with FIX and PPS mode
 ```
 <- ?U	
--> [val]V
+-> ?U [val]V
 ```
 set voltage in PPS mode
 ```
 <- !U [val]V
--> [val]V	
+-> !U [val]V	
 ``` 
 get max. available voltage at a given current limit
 ```
 <- ?U [val]A
--> [val]V	
+-> ?U [val]V	
 ``` 
 
 #### program version `V`
 ``` 
 <- ?V
--> [Ver] [Built]
+-> ?V [Ver] [Built]
 ```	
 
 [home](../README.md)
