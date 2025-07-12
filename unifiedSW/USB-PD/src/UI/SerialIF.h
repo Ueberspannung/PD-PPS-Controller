@@ -34,7 +34,7 @@ class SerialIF_c
 		static const char ReadFlag='?';
 		static const char WriteFlag='!';
 
-		static const uint8_t BufferLen 	= 32;
+		static const uint8_t BufferLen 	= 48;
 		static const uint8_t RxMin		= 2;
 
 		static const uint8_t millisDecimals	=3;
@@ -43,9 +43,13 @@ class SerialIF_c
 		static const uint8_t ProfileVoltage =5;
 		static const uint8_t ProfileCurrent =4;
 
+		static const uint16_t minSendIntervall=100;	
+
 		char Buffer[BufferLen];
 		uint8_t BufferCnt;
 		uint16_t TimeStamp;
+		uint16_t SendIntervall;
+		uint16_t LastSend;
         bool externalUpdate;
 
 		processMode_et processMode;

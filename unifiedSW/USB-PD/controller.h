@@ -52,6 +52,9 @@ class controller_c
 												
 	
 		controller_c(void);
+		
+		void set_init_data(void);
+		
 		void process(void);
 		bool is_up(void);
 		bool is_power_ready(void);
@@ -60,6 +63,8 @@ class controller_c
 		bool is_ps_transition(void) { return PD.is_ps_transition(); }
 		bool is_constant_current_active(void);
 		bool is_busy(void) { return PD.is_busy(); }
+		
+		bool is_bus_power_change(void);
 		
 		uint16_t clock_ms(void) { return PD.clock_ms(); }			// alt: controller_state.process_time
 
@@ -196,6 +201,10 @@ class controller_c
 		static const uint16_t PD_NO_PD_CURRENT=1000;	// no information about PD source
 		static const uint16_t PD_TRANSITION_TIMOUT=500;	// 500 ms transition timeout
 
+		static const uint8_t VBUS_RUN_SETTLE_CYCLES=20;
+		static const uint16_t VBUS_OFF_LIMIT=1000;
+		static const uint16_t VBUS_ON_LIMIT=4000;
+
 		typedef struct controller_state_s { uint16_t				process_time;
 											uint16_t				last_process;
 											uint16_t				power_transition_timer;
@@ -207,6 +216,7 @@ class controller_c
 											uint16_t				new_output_current;
 											uint8_t					timer_10ms;
 											uint8_t					timer_100ms;
+											uint8_t					timer_bus_power;
 											controller_state_et 	main_state;
 											operating_mode_et		operating_mode;
 											monitor_init_state_et 	monitor_state;
@@ -215,6 +225,9 @@ class controller_c
 											bool					output_switch;
 											bool					power_is_ready;
 											bool					power_transition_timout;
+											bool					bus_power_ok;
+											bool					bus_power_change;
+											bool					first_run;
 										}	controller_state_st;
 
 

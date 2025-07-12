@@ -181,11 +181,20 @@ void controller_c::printstat(uint16_t Zeile)
 controller_c::controller_c(void)
 {
 	// todo: basic initialisation
+	set_init_data();
+	controller_state.first_run=true;
+	controller_state.bus_power_change=false;
+	controller_state.bus_power_ok=true;
+}
+
+void controller_c::set_init_data(void)
+{	// set_set_init_data
 	controller_state.main_state=CONTROLLER_INIT_PD;
 	controller_state.process_time=0;
 	controller_state.last_process=0;
 	controller_state.timer_10ms=0;
 	controller_state.timer_100ms=0;
+	controller_state.timer_bus_power=0;
 	controller_state.operating_mode=CONTROLLER_MODE_OFF;
 	controller_state.set_output_voltage=0;
 	controller_state.set_output_current=0;
@@ -200,7 +209,7 @@ controller_c::controller_c(void)
 	controller_state.power_is_ready=true;
 	controller_state.power_transition_timout=false;
 	resetRegulator();
-}
+}	// set_set_init_data
 
 void controller_c::process(void)
 {	// process
@@ -220,6 +229,31 @@ void controller_c::process(void)
 	}	// transition in progress
 
 	printstat(__LINE__);
+	
+	// blink led
+	switch (controller_state.main_state)
+	{	// switch main state
+		case CONTROLLER_INIT_PD:
+			break;
+		case CONTROLLER_RUN:
+			break;
+		default:
+			controller_state.timer_10ms+= 
+				(uint8_t)(	controller_state.process_time -
+							controller_state.last_process);
+
+			if (controller_state.timer_10ms>=10)
+			{	// 10ms timer
+				controller_state.timer_10ms=0;
+				controller_state.timer_bus_power++;
+				if ((controller_state.timer_bus_power / 10) & 0x01)
+					power_led.set_led_color(LED_STARTUP);
+				else
+					power_led.set_led_color(LED_POWER_OFF);
+			}	// 10ms timer
+		
+			break;
+	}	// switch main state
 	
 	switch (controller_state.main_state)
 	{	// switch main_state
@@ -259,6 +293,7 @@ void controller_c::process(void)
 				CONTROLLER_DEBUG_TIME2();
 				CONTROLLER_DEBUG_PRINTLN2(F("PD Ready, CONTROLLER_INIT_VBUS_IIR"));
 				Vbus.set(calc_Vbus());
+				power_led.set_led_color(LED_POWER_OFF);
 				controller_state.main_state=CONTROLLER_RUN;
 			}
 			
@@ -286,6 +321,7 @@ void controller_c::process(void)
 				{	// 10ms timer
 					Vbus.add(calc_Vbus());
 					controller_state.timer_10ms=0;
+					controller_state.timer_bus_power++;
 				}	// 10ms timer
 				
 				printstat(__LINE__);
@@ -314,6 +350,35 @@ void controller_c::process(void)
 						printstat(__LINE__);
 					}	// measurement not ready, wait
 				}	// 100ms timer
+
+				if (controller_state.timer_bus_power>=VBUS_RUN_SETTLE_CYCLES)
+				{	// bus power timer
+					bool last_bus_power=controller_state.bus_power_ok;
+
+					controller_state.timer_bus_power=0;
+					/* Buspower change:
+					 * fail Vbus < VBUS_OFF_LIMIT
+					 * ok	Vbus > VBUS_ON_LIMIT
+					 * laststate else
+					 */
+					controller_state.bus_power_ok=
+						(last_bus_power && !(Vbus.get()<VBUS_OFF_LIMIT) ) ||
+						(Vbus.get()>VBUS_ON_LIMIT);
+					if (!controller_state.first_run)
+					{	// check Vbus fail / restore
+						if (last_bus_power!=controller_state.bus_power_ok)
+						{	// change
+							controller_state.bus_power_change=true;
+							set_init_data();
+						}	// change
+					}	// check Vbus fail / restore
+					else
+					{	// first run, keep calm
+						controller_state.first_run=false;
+						controller_state.bus_power_change=false;
+					}	// first run, keep calm
+				}	// bus power timer
+
 			}	// check time dependend operations
 			
 			if (controller_state.evaluate_settings)
@@ -322,7 +387,7 @@ void controller_c::process(void)
 				{	// transition ready
 					printstat(__LINE__);
 					
-					controller_state.evaluate_settings=false;
+					controller_state.evaluate_settings=true;
 					if (!((PD.get_ps_status()==STATUS_POWER_PPS) &&
 						  (controller_state.operating_mode!=CONTROLLER_MODE_OFF)))
 					{	// no active PPS regulation
@@ -358,6 +423,17 @@ void controller_c::process(void)
 	printstat(__LINE__);
 
 }	// process
+
+bool controller_c::is_bus_power_change(void)
+{	// is_bus_power_change
+	bool change;
+
+	change=controller_state.bus_power_change;
+	controller_state.bus_power_change=false;
+	
+	return change;
+}	// is_bus_power_change
+
 
 bool controller_c::is_up(void)
 {	// is_up

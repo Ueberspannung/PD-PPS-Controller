@@ -675,10 +675,10 @@ void menu_mini_c::doPower(void)
 			{	// pps yellow, cyan or red
 				if ((controller->get_operating_mode() !=
 					 controller_c::CONTROLLER_MODE_OFF))
-				{	// mode is pps gefulated
+				{	// mode is pps refulated
 					if (controller->is_constant_current_active())
 					{	// constand current mode, show readings red
-						Lcd.setColour(tft_mini_c::GREY);
+						Lcd.setColour(tft_mini_c::RED);
 					}	// constand current mode, show readings red
 					else
 					{	// no overload, show cyan
@@ -1015,10 +1015,10 @@ void menu_mini_c::doSettings(void)
 				}	// inkrement brightness
 				if (buttonState.buttonTurns<0)
 				{	// decrement brightness
-					if (settings_edit.Brightness>pgmMenuSettings[menu_item].edit_val)
+					if (settings_edit.Brightness>5+pgmMenuSettings[menu_item].edit_val)
 						settings_edit.Brightness-=pgmMenuSettings[menu_item].edit_val;
 					else
-						settings_edit.Brightness=0;
+						settings_edit.Brightness=5;
 				}	// decrement brightness
 				Lcd.setBrightness(settings_edit.Brightness);
 				force_update=true;
@@ -1219,7 +1219,7 @@ void menu_mini_c::doRemote(void)
 				{	// mode is pps gefulated
 					if (controller->is_constant_current_active())
 					{	// constand current mode, show readings red
-						Lcd.setColour(tft_mini_c::GREY);
+						Lcd.setColour(tft_mini_c::RED);
 					}	// constand current mode, show readings red
 					else
 					{	// no overload, show cyan

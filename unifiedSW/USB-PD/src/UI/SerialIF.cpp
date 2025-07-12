@@ -23,7 +23,7 @@
  */
 
 const char SerialIF_c::ReadCommands[]		="!#?CFINORSTUV";
-const char SerialIF_c::WriteCommands[]		= "#CEIORSU";
+const char SerialIF_c::WriteCommands[]		="#?CEIORSU";
 
 const char SerialIF_c::StatusTextReady[]	="ready";
 const char SerialIF_c::StatusTextBusy[]		="busy";
@@ -51,6 +51,7 @@ void SerialIF_c::begin(void)
 	// connection established
 	processMode=START;
 	BufferCnt=0;
+	SendIntervall=0;
 }	// begin
 
 void SerialIF_c::end(void)
@@ -95,6 +96,17 @@ bool SerialIF_c::process(void)
 			/* FALL THROUH */
 			if (bReceive())
 				DecodeCommand();
+			else if ((BufferCnt==0) && (SendIntervall>0))
+			{	// check auto output status
+				if (((uint16_t)(TimeStamp-LastSend))>SendIntervall)
+				{	// send data
+					Buffer[0]=ReadFlag;
+					doOutputStatus();
+					addChar(Buffer,BufferCnt,CR);
+					pPort->write(Buffer,BufferCnt);
+					BufferCnt=0;
+				}	// send data
+			}	// check auto output status
 			break;
 		default:
 			processMode=START;
@@ -115,7 +127,7 @@ bool SerialIF_c::process(void)
 bool SerialIF_c::bReceive(void)
 {	// receive
 	bool bOk=false;
-	while (pPort->available())
+	while (pPort->available() && !bOk)
 	{
 		Buffer[BufferCnt]=pPort->read();
 		bOk=Buffer[BufferCnt]==CR;
@@ -291,7 +303,9 @@ uint8_t SerialIF_c::FindItem(const char * Data, const char * Items)
 
 void SerialIF_c::doSystemStatus(void)
 {	// doSystemStatus
-	BufferCnt=0;
+	BufferCnt=2;
+	
+	addChar(Buffer,BufferCnt,SPACE);
 
 	switch (processMode)
 	{
@@ -410,14 +424,23 @@ void SerialIF_c::doProfile(void)
 	}	// set profile
 	else
 	{	// just get current profile
-		BufferCnt=1;
-		Buffer[0]='0'+pController->get_current_profile();
+		BufferCnt=2;
+		addChar(Buffer,BufferCnt,SPACE);
+
+		Buffer[BufferCnt++]='0'+pController->get_current_profile();
 	}	// just get current profile
 }	// doProfile
 
 void SerialIF_c::doOutputStatus(void)
 {	// doOutputStatus
+	if (Buffer[0]==ReadFlag)
+	{	// send output status
+		LastSend+=SendIntervall;
 	BufferCnt=0;
+		addChar(Buffer,BufferCnt,'?');
+		addChar(Buffer,BufferCnt,'?');
+		addChar(Buffer,BufferCnt,SPACE);
+		
 	if (!pController->is_output_enabled())
 		addChar(Buffer,BufferCnt,'0');
 	else if (pController->is_constant_current_active())
@@ -442,6 +465,19 @@ void SerialIF_c::doOutputStatus(void)
 													millisLen,millisDecimals);
 	BufferCnt+=millisLen;
 	addChar(Buffer,BufferCnt,'A');
+	}	// send output status
+	else
+	{	// set output status timer
+		SendIntervall=convert_c(&Buffer[2]).getUnsigned(0);
+		if (SendIntervall<minSendIntervall) SendIntervall=0;
+		BufferCnt=2;
+		addChar(Buffer,BufferCnt,SPACE);
+		convert_c(	SendIntervall,0).getStringUnsigned(	&Buffer[BufferCnt],5,0);
+		BufferCnt+=5;
+		addChar(Buffer,BufferCnt,'m');
+		addChar(Buffer,BufferCnt,'s');
+		LastSend=pController->clock_ms();
+	}	// set output status timer
 }	// doOutputStatus
 
 void SerialIF_c::doCurrentCalibration(void)
@@ -462,7 +498,9 @@ void SerialIF_c::doCurrentCalibration(void)
 		pParameter->write();
 	}	// set current calibration
 
-	BufferCnt=0;
+	BufferCnt=2;
+	addChar(Buffer,BufferCnt,SPACE);
+	
 	pParameter->getCalI(&internal,&reference);
 	convert_c(	internal,
 				millisDecimals).getStringUnsigned(	&Buffer[BufferCnt],
@@ -490,12 +528,14 @@ void SerialIF_c::doFindProfile(void)
 	uint16_t voltage;
 	voltage=convert_c(&Buffer[2]).getUnsigned(millisDecimals);
 	voltage=pController->get_fix_voltage_mV(voltage);
-	BufferCnt=ProfileVoltage+1;
+	BufferCnt=2;
+	addChar(Buffer,BufferCnt,SPACE);
 	convert_c(	voltage,
-				millisDecimals).getStringUnsigned(	Buffer,
+				millisDecimals).getStringUnsigned(	&Buffer[BufferCnt],
 													ProfileVoltage,
 													ProfileDecimals,
 													"V");
+	BufferCnt+=ProfileVoltage+1;
 }	// doFindProfile
 
 void SerialIF_c::doCurrent(void)
@@ -525,12 +565,14 @@ void SerialIF_c::doCurrent(void)
 					pParameter->setCurrent_mA(current);
 					pParameter->write();
 				}	// Auto -> Save
-				BufferCnt=ProfileCurrent+1;
+				BufferCnt=2;
+				addChar(Buffer,BufferCnt,SPACE);
 				convert_c(	current,
-							millisDecimals).getStringUnsigned( 	Buffer,
+							millisDecimals).getStringUnsigned( 	&Buffer[BufferCnt],
 																ProfileCurrent,
 																ProfileDecimals,
 																"A");
+				BufferCnt+=ProfileCurrent+1;
                 externalUpdate=true;
 			} // new Value, set
 			else
@@ -546,23 +588,28 @@ void SerialIF_c::doCurrent(void)
 	else
 	{	// search for max current
 		uint16_t voltage;
-		BufferCnt=ProfileCurrent+1;
 		voltage=convert_c(&Buffer[2]).getUnsigned(millisDecimals);
+		BufferCnt=2;
+		addChar(Buffer,BufferCnt,SPACE);
 		convert_c(	pController->get_max_current_mA(voltage),
-					millisDecimals).getStringUnsigned( 	Buffer,
+					millisDecimals).getStringUnsigned( 	&Buffer[BufferCnt],
 														ProfileCurrent,
 														ProfileDecimals,
 														"A");
+		BufferCnt+=ProfileCurrent+1;
+
 	}	// search for max voltage
 
 	if (sendSetCurrent)
 	{	// send set voltage
-		BufferCnt=ProfileCurrent+1;
+		BufferCnt=2;
+		addChar(Buffer,BufferCnt,SPACE);
 		convert_c(	pController->get_set_current(),
-					millisDecimals).getStringUnsigned( 	Buffer,
+					millisDecimals).getStringUnsigned( 	&Buffer[BufferCnt],
 														ProfileCurrent,
 														ProfileDecimals,
 														"A");
+		BufferCnt+=ProfileCurrent+1;
 	}	// send set current
 }	// doCurrent
 
@@ -571,8 +618,8 @@ void SerialIF_c::doPowerInfo(void)
 	if (BufferCnt==2)
 	{	// no parameter
 		// report number of profiles
-		BufferCnt=1;
-		Buffer[0]='0'+pController->get_profile_cnt();
+		addChar(Buffer,BufferCnt,SPACE);
+		Buffer[BufferCnt++]='0'+pController->get_profile_cnt();
 	}	// no parameter
 	else
 	{	// report profile info
@@ -581,9 +628,9 @@ void SerialIF_c::doPowerInfo(void)
 
 		n=convert_c(&Buffer[2]).getUnsigned(0);
 
-		BufferCnt=0;
+		BufferCnt=2;
 		addChar(Buffer,BufferCnt,SPACE,BufferLen);
-		BufferCnt=0;
+		BufferCnt=3;
 		Buffer[BufferCnt++]='#';
 		Buffer[BufferCnt++]='0'+n;
 		Buffer[BufferCnt++]=':';
@@ -674,8 +721,9 @@ void SerialIF_c::doOutputSwitch(void)
 		externalUpdate=true;
 	}	//	set Output Switch
 
-	BufferCnt=1;
-	Buffer[0]=(pController->is_output_enabled())?('1'):('0');
+	BufferCnt=2;
+	addChar(Buffer,BufferCnt,SPACE);
+	Buffer[BufferCnt++]=(pController->is_output_enabled())?('1'):('0');
 }	// doOutputSwitch
 
 void SerialIF_c::doRegulatorSettings(void)
@@ -699,7 +747,8 @@ void SerialIF_c::doRegulatorSettings(void)
 		externalUpdate=true;
 	}	// set mode
 
-	BufferCnt=0;
+	BufferCnt=2;
+	addChar(Buffer,BufferCnt,SPACE);
 	cpy(Buffer,BufferCnt,GetItem(RegulatorModes,(uint8_t)pController->get_operating_mode()));
 }	// doRegulatorSettings
 
@@ -724,7 +773,8 @@ void SerialIF_c::doStartUpSettings(void)
 		}	// new values, set
 	}	// set mode
 
-	BufferCnt=0;
+	BufferCnt=2;
+	addChar(Buffer,BufferCnt,SPACE);
 	if (pParameter->getAutoOn())
 		mode=2;
 	else if (pParameter->getAutoSet())
@@ -736,7 +786,8 @@ void SerialIF_c::doStartUpSettings(void)
 void SerialIF_c::doPowerType(void)
 {	// doPowerType
 	const char * pMode=PowerModes;
-	BufferCnt=0;
+	BufferCnt=2;
+	addChar(Buffer,BufferCnt,SPACE);
 
 	if (pController->is_PD())
 		pMode=NextItem(pMode);
@@ -775,12 +826,15 @@ void SerialIF_c::doVoltage(void)
 					pParameter->setVoltage_mV(voltage);
 					pParameter->write();
 				}	// Auto -> Save
-				BufferCnt=ProfileVoltage+1;
+
+				BufferCnt=2;
+				addChar(Buffer,BufferCnt,SPACE);
 				convert_c(	voltage,
-							millisDecimals).getStringUnsigned( 	Buffer,
+							millisDecimals).getStringUnsigned( 	&Buffer[BufferCnt],
 																ProfileVoltage,
 																ProfileDecimals,
 																"V");
+				BufferCnt+=ProfileVoltage+1;
                 externalUpdate=true;
 			} // new Value, set
 			else
@@ -794,28 +848,35 @@ void SerialIF_c::doVoltage(void)
 		uint16_t current;
 		current=convert_c(&Buffer[2]).getUnsigned(millisDecimals);
 		current-=current%10;
-		BufferCnt=ProfileVoltage+1;
+
+		BufferCnt=2;
+		addChar(Buffer,BufferCnt,SPACE);
 		convert_c(	pController->get_max_voltage_mV(current),
-					millisDecimals).getStringUnsigned( 	Buffer,
+					millisDecimals).getStringUnsigned( 	&Buffer[BufferCnt],
 														ProfileVoltage,
 														ProfileDecimals,
 														"V");
+		BufferCnt+=ProfileVoltage+1;
+
 	}	// search for max voltage
 
 	if (sendSetVoltage)
 	{	// send set voltage
-		BufferCnt=ProfileVoltage+1;
+		BufferCnt=2;
+		addChar(Buffer,BufferCnt,SPACE);
 		convert_c(	pController->get_set_voltage(),
-					millisDecimals).getStringUnsigned( 	Buffer,
+					millisDecimals).getStringUnsigned( 	&Buffer[BufferCnt],
 														ProfileVoltage,
 														ProfileDecimals,
 														"V");
+		BufferCnt+=ProfileVoltage+1;
 	}	// send set voltage
 }	// doFixVoltage
 
 void SerialIF_c::doVersion(void)
 {	// get version
-	BufferCnt=0;
+	BufferCnt=2;
+	addChar(Buffer,BufferCnt,SPACE);
 	cpy(Buffer,BufferCnt,Version_c().pgmGetVersion());
 	addChar(Buffer,BufferCnt,SPACE);
 	cpy(Buffer,BufferCnt,Version_c().pgmGetBuiltDate());

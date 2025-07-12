@@ -147,8 +147,22 @@ void UI_c::process(void)
 			}
 			break;
 		case state_up:
+			if (Controller.is_bus_power_change())
+			{	// bus_power_cahnge
+				/* 
+				 * bus voltage change has been detected:
+				 * hystereses: < 1 V ok -> fail
+				 *             > 4 V fail -> ok
+				 */
+				Menu.forceUpdate();
+				Terminal.begin();
+				SerialIF.begin();
+				Controller.enable_output(false);
+				state=state_wait_for_controller;
+			}	// bus_power_cahnge
 			break;
 		default:
 			state=state_wait_for_parameter;
+			break;
 	}
 }	// process
