@@ -119,6 +119,7 @@ command | acces | description
 `E`     |   W   | [erase settings](#erase-settings-e)
 `F`     |   R   | [find closest profile](#find-closest-fix-voltage-profile-f)
 `I`     |  R/W  | [avialable current and current limit](#avialable-current-and-current-limit-i)
+`L`     |  R/W  | [enable logging](#logging)
 `N`     |   R   | [number profiles](#request-number-of-available-profiles-n) and [profile data](#request-profile-data-n)
 `O`     |  R/W  | [output switch](#operate-output-switch-o)
 `R`     |  R/W  | [controller operating mode](#controller-operating-mode-r)
@@ -255,6 +256,30 @@ the returned current is the actually set value.
 > to -25 mA / +100 mA on load change to +/-500 mA. I could not safely verfy this limits.  
 > I found that the current is limited to 110 % - 130 % of the nominal Value. an Overshoot to 200 % 
 > causes the charger to reset
+
+
+#### logging `N`
+request logging parameter  
+```
+<- ?L  
+-> ?L [val]ms [val]
+```
+1. **`[val]ms`**  
+   ** logging interval in ms or 0 = off
+2. **`[val]`** current file number, 8 digits with leeding zeros, 
+   **`00000000` if no sd card is present
+
+```
+<- !L [val]ms
+-> !L [val]ms [val]
+```
+1. **`[val]ms`**  
+   ** logging interval in ms or 0 = off  
+   value will be set to the next lower value from 0, 250ms, 500ms, 1000ms, 2.5s, 5s, 10s, 20s, 30s   
+   300ms will result in 250ms
+2. **`[val]`** current file number, 8 digits with leeding zeros, 
+   **`00000000` if no sd card is present
+
 
 #### request number of available profiles `N`
 ```

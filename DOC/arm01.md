@@ -1,6 +1,6 @@
 # ARM Prototype V1.0
 
-![first arm](../img/USB-PD-4011A_02_thumb.jpg)
+![first arm](../img/USB-PD-4011A_04_thumb.jpg)
 
 #### Table of contents
 - [ARM prototype](#ARM-prototype)
@@ -47,7 +47,7 @@ The PCBA:
 ![bottom](../img/USB-PD-4011A_01.jpg)  
   
 A working prototype:  
-![top](../img/USB-PD-4011A_02.jpg)   
+![top](../img/USB-PD-4011A_03.jpg)   
 
 ### necessary rework on first ARM hardware
 - The output needs a pull down to get a proper zero reading. In order to not to influce the curren measurement the resistor needs 
