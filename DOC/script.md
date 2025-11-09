@@ -284,7 +284,7 @@ wrtite all 10 user flags to eeprom / config file
 ### with errors
 
 #### program file-with error
-```
+```javascript {.line-numbers}
 # test of current consumption
 
 #start at 3.3V, limit current to 2,2A
@@ -343,7 +343,9 @@ this produces on error file:
  21: multiple operators selected
  32: invalid parameter sequence
  24: referenced label is undefined
- 32: referenced label is undefined```
+ 32: referenced label is undefined
+```
+
 in line 21:
 ```
 	set U=-0.1V 100ms
@@ -373,8 +375,9 @@ the target should be line 42 but the label has been mistyped
 #### parse file with error
 
 The vebose output produces a parse file:
+
 ```
-***********************************************
+ ***********************************************
   2672: log file opened LIMIT.LOG
   2672: error file opened LIMIT.ERR
   2672: prarser file opened LIMIT.PRS
