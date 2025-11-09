@@ -130,7 +130,7 @@ depending on the quality of the shunt resistor an addition calibration is possib
 this menu can only be use with an sd card inserted otherwise it will show "no card"
 the logging menu allows the user to set up an automatic documentation of the work
 as soon a logging interval is selected, the system starts to write the system data to the sd-card.  
-details can be found here [logging](./DOC/log.md)  
+details can be found here [logging](../DOC/log.md)  
 
 ## Program
 
@@ -139,7 +139,7 @@ If no SD Card is inserted the menu will show "NO CARD". If there is an SD Card w
 When there are program files available one can select the desired file. when acknowledged with <CR> key, the program will be parsed.
 This could take a few seconds during which the filname will flash. When finished, the filname will be either green or red. 
 If red errors have been detected.   
-See [script control](./DOC/script.md) for details  
+See [script control](../DOC/script.md) for details  
 
 when a program has succesfully been parsed it can be started using the <O> key to swith on the output. The output will be controlled by the script.
 Instead of "(On)"  "(O) Running" will be displayed.
