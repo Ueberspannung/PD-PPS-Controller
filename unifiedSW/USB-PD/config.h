@@ -1,5 +1,8 @@
+#pragma once
+
 #ifndef __config_h__
 #define __config_h__
+
 
 //#define PD_PPS_CONTROLLER			// definitions for pdMicro rev. 1
 //#define PD_PPS_CONTROLLER_2		// definitions for pdMicro rev. 2 
@@ -8,7 +11,6 @@
 
 
 #if defined(PD_PPS_CONTROLLER)
-#pragma message (	"*** first HW Version ***" )
 
 
 	#define HWCFG_POWER_SWITCH 		(2)
@@ -20,7 +22,7 @@
 	#define HWCFG_FUSB302INT_PIN	(7)
 	#define HWCFG_IMU_INT_PIN		(14)	// just for completeness, not present in this rev.
 	#define HWCFG_ADC_INT_PIN		(24)	// just for completeness, not present in this rev.
-	#define HWCFG_TMP_INT_PIN		(30)	// just for completeness, not present in this rev.
+	#define HWCFG_TMP_INT_PIN		(0xFF)	//(30)	// just for completeness, not present in this rev.
 
 	#define HWCFG_CAT4004_PIN		(8)		// alt. 40 (identical port)
 	#define HWCFG_CAT4004_TYPE		('A')
@@ -48,11 +50,12 @@
 	#define HWCFG_EEPROM_I2C_ADDR	(0x50)
 	#define HWCFG_EEPROM_DENSITY	(eeprom::eeprom_32kbit)
 
+	#define HWCFG_TMP_I2C_ADDR		(0x48)
+	#define HWCFG_TMP_TYPE_TMP117	// just a macro to indicate temperature sensor type
+
 #elif defined(PD_PPS_CONTROLLER_2)
-#pragma message (	"*** second HW Version + HD44780 ***" )
 
 #elif defined(PD_PPS_CONTROLLER_MINI)
-#pragma message (	"*** mini HW Version  ***" )
 
 	#define HWCFG_POWER_SWITCH 		(23)
 	#define HWCFG_LED_GREEN			(17)
@@ -89,6 +92,8 @@
 	//#define HWCFG_ADC_TYPE_INA219	// just a macro to indicate adc type, if undef INA232 is used
 	#define HWCFG_EEPROM_I2C_ADDR	(0x50)	// does not exist Parameter in fake mode
 	#define HWCFG_EEPROM_DENSITY	(eeprom::eeprom_32kbit)
+	#define HWCFG_TMP_I2C_ADDR		(0x48)
+
 	
 	#define HWCFG_SDCARD_MOSI		(22)	// PA12
 	#define HWCFG_SDCARD_MISO		(5)		// PA15

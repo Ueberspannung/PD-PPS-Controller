@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include "controller.h"
-#include "messages.h"
+#include "../tool/messages.h"
 
 #ifdef ARDUINO_ARCH_AVR
 	#include <avr/power.h>
@@ -21,7 +21,7 @@
 	#define CONTROLLER_DEBUG_PRINT2(x) 		
 	#define CONTROLLER_DEBUG_PRINTLN2(x)
 	#define CONTROLLER_DEBUG_TIME3() 	
-	#define CONTROLLER_DEBUG_PRINT3(x) 		
+	#define CONTROLLER_DEBUG_PRINT3(x) 		{ (void) x;}
 	#define CONTROLLER_DEBUG_PRINTLN3(x)
 #elif CONTROLLER_DEBUG_LEVEL == 1
 	#define CONTROLLER_DEBUG_TIME() 		{ Serial1.print(controller_state.process_time); Serial1.print(F(": ")); }
@@ -31,7 +31,7 @@
 	#define CONTROLLER_DEBUG_PRINT2(x) 		
 	#define CONTROLLER_DEBUG_PRINTLN2(x)
 	#define CONTROLLER_DEBUG_TIME3() 	
-	#define CONTROLLER_DEBUG_PRINT3(x) 		
+	#define CONTROLLER_DEBUG_PRINT3(x) 		{ (void) x;}
 	#define CONTROLLER_DEBUG_PRINTLN3(x)
 #elif CONTROLLER_DEBUG_LEVEL == 2
 	#define CONTROLLER_DEBUG_TIME() 	
@@ -41,7 +41,7 @@
 	#define CONTROLLER_DEBUG_PRINT2(x) 		Serial1.print(x);
 	#define CONTROLLER_DEBUG_PRINTLN2(x) 	{ Serial1.print(x); Serial1.print(F("\n")); }
 	#define CONTROLLER_DEBUG_TIME3() 	
-	#define CONTROLLER_DEBUG_PRINT3(x) 		
+	#define CONTROLLER_DEBUG_PRINT3(x) 		{ (void) x;}
 	#define CONTROLLER_DEBUG_PRINTLN3(x)
 #elif CONTROLLER_DEBUG_LEVEL == 3
 	#define CONTROLLER_DEBUG_TIME() 	
@@ -208,6 +208,8 @@ void controller_c::set_init_data(void)
 	controller_state.pd_transition_state=PD_TRANSITION_START;
 	controller_state.power_is_ready=true;
 	controller_state.power_transition_timout=false;
+	controller_state.has_temperature=false;
+	controller_state.temperature=0;
 	resetRegulator();
 }	// set_set_init_data
 
@@ -294,12 +296,51 @@ void controller_c::process(void)
 				CONTROLLER_DEBUG_PRINTLN2(F("PD Ready, CONTROLLER_INIT_VBUS_IIR"));
 				Vbus.set(calc_Vbus());
 				power_led.set_led_color(LED_POWER_OFF);
-				controller_state.main_state=CONTROLLER_RUN;
+				controller_state.main_state=CONTROLLER_INIT_TEMPERATURE;
 			}
 			
 			printstat(__LINE__);
 			break;
+		case CONTROLLER_INIT_TEMPERATURE:
+			controller_state.has_temperature=temperature.init();
+			if (controller_state.has_temperature)
+			{	// configure temperature sensor
+				/* ***************************************************************
+				 * temperature is self timed, upper and lower limits are inverted
+				 * so every conversion ready a temperature alert will be gbenerated
+				 * this will checked every 100ms
+				 */
+				#ifdef HWCFG_TMP_TYPE_TMP117
+					// configuration for TM117
+					
+					// prevent temperature alert
+					temperature.setLowTemperaturLimit(-127,0);
+					temperature.setHighTemperaturLimit(127,0);
 
+					temperature.setConversionTime(TMP::CONVERSION_TIME_1_4s);
+					temperature.setAveragingMode(TMP::AVERAGING_OFF);
+
+					temperature.setConversionMode(TMP::MODE_CONTINUOUS);
+					temperature.setAlertMode(TMP::ALERT_MODE_ALERT);
+					temperature.setAlertPinPolarity(TMP::ALERT_PIN_ACTIVE_LOW);
+					temperature.setAlertPinSource(TMP::ALERT_PIN_DATA_READY);
+				#else
+					// configuration for TP1075
+					
+					// force temperature alert, no data Ready
+					temperature.setLowTemperaturLimit(127,0);
+					temperature.setHighTemperaturLimit(-127,0);
+
+					temperature.setConversionTime(TMP::CONVERSION_TIME_1_4s);
+					temperature.setFaultCount(TMP::FAULT_COUNT_4);
+
+					temperature.setConversionMode(TMP::MODE_CONTINUOUS);
+					temperature.setAlertMode(TMP::ALERT_MODE_INTERRUPT);
+					temperature.setAlertPinPolarity(TMP::ALERT_PIN_ACTIVE_LOW);
+				#endif
+			}	// configure temperature sensor
+			controller_state.main_state=CONTROLLER_RUN;
+			break;
 		case CONTROLLER_RUN:
 			printstat(__LINE__);
 			// ms and timer procedures
@@ -349,6 +390,13 @@ void controller_c::process(void)
 						
 						printstat(__LINE__);
 					}	// measurement not ready, wait
+
+					if (controller_state.has_temperature)
+					{	// check if new temperature is availabele
+						if (temperature.isAlert())
+							controller_state.temperature=temperature.getTemp(1);
+					}	// check if new temperature is availabele
+					
 				}	// 100ms timer
 
 				if (controller_state.timer_bus_power>=VBUS_RUN_SETTLE_CYCLES)
@@ -380,6 +428,7 @@ void controller_c::process(void)
 				}	// bus power timer
 
 			}	// check time dependend operations
+
 			
 			if (controller_state.evaluate_settings)
 			{	// read back pd settings when ready
@@ -792,6 +841,15 @@ const char * controller_c::get_profile_text(enum PD_power_data_obj_type_t profil
 }	// getProfileText
 	
 
+bool controller_c::has_temperature(void)					// indicates if temperature sensor is presernt
+{	//	has_temperature
+	return controller_state.has_temperature;
+}	//	has_temperature
+
+int16_t	controller_c::get_temperature_dC(void)					// gets temperature in 0,1°C 
+{	//	get_temperature_dC
+	return controller_state.temperature;
+}	//  get_temperature_dC
 
 /* *********************************************************************
  * private functions

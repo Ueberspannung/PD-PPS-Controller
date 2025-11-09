@@ -63,6 +63,11 @@ class tft_mini_c:cat4004
                                 ICON_CHECK,         // char 0x88
                                 ICON_CANCEL,        // char 0x89
                                 ICON_SDCARD,		// char 0x8A
+                                ICON_LOG,			// char 0x8B
+                                ICON_PROG,			// char 0x8C
+                                ICON_FILE,			// char 0x8D 
+                                ICON_MENU,			// char 0x8E
+                                ICON_STEP,			// char 0x8F
                                 MAX_ICON_CNT        
                                 } icon_et;
 

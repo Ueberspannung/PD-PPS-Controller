@@ -3,9 +3,9 @@
 #include <Arduino.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "src/memory/eeprom.h"
-#include "src/memory/sd_detect.h"
+#include "../memory/eeprom.h"
 #include "controller.h"
+#include "log.h"
 
 class parameter
 {
@@ -28,6 +28,10 @@ class parameter
 		void setCalI(uint16_t Cal, uint16_t Ref);
 		void setVoltage_mV(uint16_t VoltageStep);
 		void setCurrent_mA(uint16_t CurrentStep);
+		void setLogInteval(log_c::logInterval_et interval);
+		void setExtendedMenu(bool bExtended);
+		void setProgramName(const char * pName);
+		void setFlags(const uint8_t *pFlags);
 
 		uint8_t getBrightness(void);
 		bool getAutoSet(void);
@@ -38,13 +42,18 @@ class parameter
 		void getCalI(uint16_t *pCal, uint16_t *pRef);
 		uint16_t getVoltage_mV(void);
 		uint16_t getCurrent_mA(void);
+		log_c::logInterval_et getLogInterval(void);
+		bool getExtendedMenu(void);
+		void getProgramName(char * pName);
+		const char * getProgramName(void);
+		void getFlags(uint8_t *pFlags);
 
-		bool hasSD(void) {return sdCard.present();};
+		bool hasSD(void);
 
-        bool isBusy(void) {return paramState!=para_idle;}
+        bool isBusy(void) {return (paramState!=para_idle);}
 	private:
 
-		const uint16_t flagVal		=0x1602;
+		const uint16_t flagVal		=0xABBA;	// used flags: 0x1602, 0xAFFE
 		const uint16_t flagAddress	=0x0000;
 		const uint16_t DataOffset	=sizeof(uint16_t);
 		const eeprom::eeprom_density_t EepromDesity=HWCFG_EEPROM_DENSITY;
@@ -55,7 +64,10 @@ class parameter
 		static const char 		configFileName[];
 		static const char 		configIDList[];
 		static const uint8_t	configBufferSize=64;
-
+		
+		static const uint8_t	ProgramNameLenght=8;
+		static const uint8_t	FlagNumber=10;
+		
 		typedef struct parameter_s
 						{ 	uint16_t 	CalU;		// Calibration for Output Voltage
 							uint16_t	RefU;		// internal measurement for Calibration
@@ -64,11 +76,15 @@ class parameter
 							uint16_t	setU;		// start value voltage
 							uint16_t	setI;		// start value current
 							uint8_t		Brightness; // Brighness of display
+							char		ProgramName[ProgramNameLenght+1];
+							uint8_t		Flags[FlagNumber];
 							uint8_t		PPS		:1;	// slect fix or pps profile
 							uint8_t		autoSet	:1;	// Flag for automatic setup to last settings on startup
 							uint8_t		autoOn	:1;	// implies autoSet but switches output on startup
 							uint8_t		CVCC	:2;	// Flag for active Constant Voltage / Current Regulator
 													// needs support for PPS
+							uint8_t		Menu	:1;	// selects standard / extended menu
+							uint8_t		Logging :4;	// Logging Mode 0-9 (off-30s)
 							uint8_t		dir		:1;	// indicator for rotation memory usage
 						} parameter_st;
 
@@ -92,15 +108,20 @@ class parameter
 								ITEM_SET_U,
 								ITEM_SET_I,
 								ITEM_BRIGHTNESS,
+								ITEM_PROGRAM_NAME,
+								ITEM_FLAGS,
 								ITEM_PPS,
 								ITEM_AUTO_SET,
 								ITEM_AUTO_ON,
 								ITEM_REGULATOR,
+								ITEM_LOGGING,
+								ITEM_MENU,
 								ITEM_END } parameter_et;
 
 		typedef enum:uint8_t {	NO_MEMORY,
 								EEPROM,
 								SDCARD } memory_et;
+								
         typedef enum:uint8_t {  SD_START,
                                 SD_DELETE,
                                 SD_OPEN,
@@ -110,7 +131,6 @@ class parameter
 
 		eeprom Eeprom{EepromDesity,EepromAddress};
 
-		sd_detect_c sdCard;
 		File		configFile;
 		char		configBuffer[configBufferSize];
 		parameter_et parameterIterator;
@@ -125,6 +145,8 @@ class parameter
 		para_stat_et paramState;
 		bool 	 bDirFlag;
 		memory_et memoryType;
+
+
 
 		uint16_t calcParamCnt(void);
 		uint16_t calcParamAddress(uint16_t ParamPos);
@@ -152,6 +174,7 @@ class parameter
 		void readConfigLine(void);
         void processWriteConfig(void);
 		void writeConfigLine(void);
+		
 };
 
 #endif //_paramter_h_

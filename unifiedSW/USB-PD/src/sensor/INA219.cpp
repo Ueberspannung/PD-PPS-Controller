@@ -56,6 +56,10 @@ void INA219::setCalibration(uint16_t Rshunt_mR,
 {	// set calibration
 	uint16_t CalVal;
 	gain_et ShuntGain;
+	
+	(void)MaxCurrent_mA; 	// only in INA232
+	(void)ShuntGain;	 	// only in INA232
+	
 	/*            0 0,04096           40960      
 		CalVal=-----------------=-------------------
                Ilsb_A*Rshunt_Ohm Ilsb_mA*Rshunt_mOhm

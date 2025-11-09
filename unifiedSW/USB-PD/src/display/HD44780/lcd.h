@@ -128,6 +128,7 @@ class lcd:lcdIO
 										uint8_t y;			// row of Progress Bar
 										uint8_t length;		// length of Progres Bar
 										uint8_t progress;	// current state of Progress Bar
+										uint8_t	last;		// flag to notify update (prevent flicker)
 									}	progress_st;
 
 										
@@ -151,5 +152,7 @@ class lcd:lcdIO
 		bool getFlag(uint8_t * pFlags, uint8_t Pos);
 		void setFlag(uint8_t * pFlags, uint8_t Pos);
 		void clearFlag(uint8_t * pFlags, uint8_t Pos);
+		
+		void updateProgressBar(void);
 };
 #endif // __lcd__

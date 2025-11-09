@@ -221,6 +221,7 @@ void lcdIO::BacklightOn(bool bOn)
 void lcdIO::SetContrast(uint8_t Contrast)
 {
 	// not yet defined
+	(void)Contrast;
 }
 
 void lcdIO::SetBrightness(uint8_t Brightness)

@@ -5,14 +5,15 @@
 #include "../display/HD44780/lcd.h"
 #include "../button/rotary_button.h"
 #include "../tool/IIR.h"
-#include "../../controller.h"
-#include "../../parameter.h"
-#include "../../Version.h"
+#include "../tool/Version.h"
+#include "../modules/controller.h"
+#include "../modules/parameter.h"
+#include "../modules/log.h"
 
 class menu_lcd_c
 {
 	public:
-		menu_lcd_c(controller_c *  controller, parameter * Parameter);
+		menu_lcd_c(controller_c *  controller, parameter * Parameter, log_c * Log);
 		void process(void);
 		
 		void setRemote(bool bRemote);
@@ -39,9 +40,19 @@ class menu_lcd_c
 								icon_contrast,
 								icon_regulator,
 								icon_ok,
-								icon_save,
+								icon_log,
 								icon_delete,
 								icon_sdcard,
+								icon_sdcard_active,
+								icon_prg,
+								icon_step,
+								icon_file,
+								icon_menu,
+								icon_right,
+								icon_left,
+								icon_down,
+								icon_up,
+								icon_degree,
 								icon_cancel,
 								icon_end 
 								}	menu_icon_et;
@@ -52,6 +63,8 @@ class menu_lcd_c
 								menu_item_calibration,
 								menu_item_delete,
 								menu_item_remote,
+								menu_item_power_standard,
+								menu_item_file,
 								menu_item_menu_end,
 								menu_item_switch,
 								menu_item_ok,
@@ -64,6 +77,8 @@ class menu_lcd_c
 								menu_item_radio2,
 								menu_item_radio3,
 								menu_item_radio4,
+								menu_item_radio5,
+								menu_item_radio6,
 								menu_item_end
 								} menu_item_et;
 								
@@ -115,6 +130,7 @@ class menu_lcd_c
 		typedef struct settings_edit_s	{	uint8_t		AutoSet:1;
 											uint8_t		CVCC:2;
 											uint8_t		AutoOn:1;
+											uint8_t		MenuExt:1;
 											uint8_t		Brightness;
 											} settings_edit_st;
 
@@ -127,9 +143,12 @@ class menu_lcd_c
 											IIR<uint16_t,uint32_t>	Filter{4};
 											uint16_t				Timer;
 											} calibration_edit_st;
+		typedef struct file_edit_s {	log_c::logInterval_et 	logInterval;
+										uint32_t				logFileNum;
+									}	file_edit_st;
 
 		static const uint8_t ICON_LENGTH 	=8;		// 8 byte per icon
-		static const uint8_t ICON_OFFSET 	=2;		// icon 0 & 1 used for progress bar
+		static const uint8_t ICON_OFFSET 	=0;		// 2;		// icon 0 & 1 used for progress bar
 		static const uint8_t ICON_CNT		=8;		// max. 8 icons
 		static const uint16_t MENU_IDLE_TIME=10000;	// cursor off after 10s
 		static const uint16_t UPDATE_CYCLE  =250;	// update display during operation
@@ -155,19 +174,29 @@ class menu_lcd_c
 		static const char pgmTextProfile[] PROGMEM;
 		static const char pgmTextSettings[] PROGMEM;        
 		static const char pgmTextCalibration[] PROGMEM;        
-		static const char pgmTextRemote[] PROGMEM;        
+		static const char pgmTextRemote[] PROGMEM;   
+		static const char pgmTextPowerStd[] PROGMEM;	
+		static const char pgmTextFile[] PROGMEM;	
+		     
 		static const menu_icon_et pgmIconsPower[] PROGMEM;
 		static const menu_icon_et pgmIconsProfile[] PROGMEM; 
 		static const menu_icon_et pgmIconsSettings[] PROGMEM; 
 		static const menu_icon_et pgmIconsCalibration[] PROGMEM; 
+		static const menu_icon_et pgmIconsPowerStd[] PROGMEM;
+		static const menu_icon_et pgmIconsFile[] PROGMEM;
+		static const menu_icon_et pgmIconsRemote[] PROGMEM;
+		
 		static const menu_pos_st pgmMenuPower[] PROGMEM;
 		static const menu_pos_st pgmMenuProfile[] PROGMEM;
 		static const menu_pos_st pgmMenuSettings[] PROGMEM;
 		static const menu_pos_st pgmMenuCalibration[] PROGMEM;
 		static const menu_pos_st pgmMenuDelete[] PROGMEM;
+		static const menu_pos_st pgmMenuPowerStd[] PROGMEM;
+		static const menu_pos_st pgmMenuFile[] PROGMEM;
 				
-		controller_c * controller;
-		parameter *	Parameter;
+		controller_c * 	controller;
+		parameter *		Parameter;
+		log_c *			Log;
 		
 		lcd				Lcd{LCD_BASE,LCD_PWM,LCD_CAT4004_PIN,LCD_CAT4004_TYP};
 		rotary_button_c	button;
@@ -182,13 +211,17 @@ class menu_lcd_c
 		uint16_t		lastUpdate;		// time of last button action
 		uint16_t		lastRefesh;		// time of last PDPPS Refresh
 		uint16_t		menuTime;		// curent time of call
-		bool			force_update;		// first call of menu
+		bool			force_update;	// first call of menu or neww data request
 
+		uint32_t		iconFlags;		// defined / undefined icons
+		
+		char 			lineBuffer[20];
 		
 		power_edit_st		power_edit;
 		profile_edit_st		profile_edit;
 		settings_edit_st	settings_edit;
 		calibration_edit_st	calibration_edit;
+		file_edit_st		file_edit;
 
 		Version_c			Version;
 		
@@ -199,13 +232,21 @@ class menu_lcd_c
 		uint8_t menu_pos_items(const menu_pos_st * menuPos);
 		
 		void doPower(void);
+		void doPowerStandard(void);
 		void doProfile(void);
 		void doSettings(void);
 		void doCalibration(void);
+		void doFile(void);
 		void doDelete(void);
 		void doRemote(void);
 		
 		void setOptions(void);		
+		
+		char icon2char(const menu_icon_et * icon_list, menu_icon_et icon);
+		bool redefine_icon(const menu_icon_et * icon_list, menu_icon_et icon,  menu_icon_et new_icon);
+
+		bool is_icon_defined(menu_icon_et icon);
+		void set_icon_defined(menu_icon_et icon, bool define);
 };
 
 #endif //__menu_lcd__

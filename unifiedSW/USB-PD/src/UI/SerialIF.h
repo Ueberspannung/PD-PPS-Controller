@@ -2,17 +2,24 @@
 #define __SERIALIF_H__
 
 #include "../tool/SerialClass.h"
-#include "../../controller.h"
-#include "../../parameter.h"
+#include "../modules/controller.h"
+#include "../modules/parameter.h"
+#include "../modules/log.h"
+#include "../modules/program.h"
 
 class SerialIF_c
 {
 	public:
-		void init(SerialClass * com, controller_c * Controller, parameter * Parameter);
+		void init(	SerialClass * com, 
+					controller_c * Controller, 
+					parameter * Parameter, 
+					log_c * Log,
+					program_c * Program);
 
 		void begin(void);
 		bool process(void);
 		void end(void);
+		void pauseAutoSend(bool bPause);
 	private:
 
 		typedef enum:uint8_t {START, PARAMETER, CONTROLLER, POWER, WAITING, ERASE, CHANGE} processMode_et;
@@ -43,6 +50,13 @@ class SerialIF_c
 		static const uint8_t ProfileVoltage =5;
 		static const uint8_t ProfileCurrent =4;
 
+		static const uint8_t decisDecimals	=1;
+		static const uint8_t decisLen		=5;
+
+		static const uint8_t logDecimals	=0;
+		static const uint8_t logIntervalLen =5;
+		static const uint8_t logFileLen		=8;
+
 		static const uint16_t minSendIntervall=100;	
 
 		char Buffer[BufferLen];
@@ -51,12 +65,15 @@ class SerialIF_c
 		uint16_t SendIntervall;
 		uint16_t LastSend;
         bool externalUpdate;
+        bool bPauseAutoSend;
 
 		processMode_et processMode;
 
 		SerialClass *	pPort;
 		controller_c *	pController;
 		parameter *		pParameter;
+		log_c *			pLog;
+		program_c *		pProgram;
 
 		bool bReceive(void);
 		void DecodeCommand(void);
@@ -84,6 +101,7 @@ class SerialIF_c
 		void doPowerType(void);
 		void doVoltage(void);
 		void doVersion(void);
+		void doLogging(void);
 };
 
 #endif // __SERIALIF_H__

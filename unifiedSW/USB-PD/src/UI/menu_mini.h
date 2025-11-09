@@ -5,14 +5,16 @@
 #include "../display/ST7735_mini/tft_mini.h"
 #include "../button/push_button.h"
 #include "../tool/IIR.h"
-#include "../../controller.h"
-#include "../../parameter.h"
-#include "../../Version.h"
+#include "../tool/Version.h"
+#include "../ASCII/ASCII_ctrl.h"
+#include "../modules/controller.h"
+#include "../modules/parameter.h"
+#include "../modules/log.h"
 
 class menu_mini_c
 {
 	public:
-		menu_mini_c(controller_c *  controller, parameter * Parameter);
+		menu_mini_c(controller_c *  controller, parameter * Parameter, log_c * Log);
 		void process(void);
 		
 		void setRemote(bool bRemote);
@@ -31,25 +33,89 @@ class menu_mini_c
 								menu_end
 								}	menue_state_et;
 	
+		/* *****************************************************************************
+		 * Description of Menu Processing:
+		 * 
+		 * 1. Menu is off, press any button
+		 * 		menu_mode_off -> menu_mode_select
+		 * 		lock_item still menu_item_end
+		 * 		cursor off -> cursor block
+		 * 
+		 * 2. Menu is on, mode menu_mode_select
+		 * 	a) up / down / rotation
+		 * 		menu item is scrolled to next available entry neither tagged with 
+		 * 		menu_mode_edit nor menu_item_end
+		 *	b) ok
+		 * 		i) item < menu_item_end
+		 * 			this is a sub menu, new menu is selected andactiviated
+		 * 		ii) item > menu item end
+		 * 			this is a mode_edit_select or direkt execution element handled local
+		 * 			mode and lock_item are selected
+		 * 
+		 * 3. Menu is on, mode menu_mode_select_edit_pos
+		 * 		-> cursor has changed from to frame
+		 * 	a) up / down / rotation
+		 * 		menu item is scrolled to next entry with the same lock_item
+		 *  b) ok
+		 * 		i) current item has menu_mode_edit
+		 * 			item is selected and mode changes to edit
+		 * 			cursor changes to bucket
+		 * 		ii) current item has menu_mode_select_edit_pos
+		 * 			mode changes to menu_mode_select_edit
+		 * 			cursor changes to underscrore
+		 * 
+		 * 4. Menu is on, mode is menu_mode_edit
+		 * 		-> cursor has changed to bucket
+		 * 	a) up / down / rotation
+		 * 		sected item is passed to handler increment / decrement 
+		 * 		as define in edit val
+		 * 	b) ok
+		 * 		mode is set to menu_mode_select_edit pos
+		 * 		cursor is changed to frame
+		 * 
+		 * 5. Menu is on, menu mode is menu_mode_select_edit
+		 * 		-> cursor has been changed to underscore
+		 * 	a) up / down / rotation
+		 * 		menu item is scrolled to next item wich has 
+		 * 		either menu_mode_select_edit (eg ok / cancel)
+		 * 		or menu_mode_select_edit_pos  
+		 * 	b) ok
+		 * 		i) item has menu_mode_select_edit_pos
+		 * 			mode changes to menu_mode_select_edit
+		 * 			lock_item is selected
+		 * 		ii) item is ok/cancel
+		 * 			if not handled locally main menu is restored
+		 * 
+		 * 6. Edit without OK CANCEL
+		 * 		when menu_item is menu_activate_n or menu_radio_n
+		 * 		and mode is menue_mode_select_edit
+		 * 		-> set to menu_mode_select
+		 */
+		
 								
-		typedef enum:uint8_t {	menu_item_power,
+		typedef enum:uint8_t {	menu_item_power,			// sub menue entries go here
 								menu_item_profile,
 								menu_item_settings,
 								menu_item_calibration,
-								menu_item_delete,
+								menu_item_file,
+								menu_item_delete_param,
 								menu_item_remote,
-								menu_item_menu_end,
-								menu_item_switch,
-								menu_item_ok,
+								menu_item_power_standard,
+								menu_item_menu_end,			// end of Ssub menue entries
+								menu_item_switch,			// direkt execution items or 
+								menu_item_ok,				// items handeld in appropriate menu function
 								menu_item_cancel,
-								menu_item_activate1,
-								menu_item_activate2,
+								menu_item_activate1,		// activate edit field for pos. selction
+								menu_item_activate2,		
 								menu_item_activate3,
-								menu_item_edit,
-								menu_item_radio1,
-								menu_item_radio2,
+								menu_item_edit,				// edit position of numeric field
+															// enables/disables up/down/rotation by pressing ok
+								menu_item_radio1,			// scroll field activition by ok butten 
+								menu_item_radio2,			// value change by up / down / rotation
 								menu_item_radio3,
 								menu_item_radio4,
+								menu_item_radio5,
+								menu_item_radio6,
 								menu_item_end
 								} menu_item_et;
 								
@@ -101,7 +167,9 @@ class menu_mini_c
 		typedef struct settings_edit_s	{	uint8_t		AutoSet:1;
 											uint8_t		CVCC:2;
 											uint8_t		AutoOn:1;
+											uint8_t		MenuExt:1;
 											uint8_t		Brightness;
+											
 											} settings_edit_st;
 
 		typedef struct callibration_value_s	{	uint16_t	internal_value;
@@ -113,6 +181,9 @@ class menu_mini_c
 											IIR<uint16_t,uint32_t>	Filter{4};
 											uint16_t				Timer;
 											} calibration_edit_st;
+		typedef struct file_edit_s {	log_c::logInterval_et 	logInterval;
+										uint32_t				logFileNum;
+									}	file_edit_st;
 
 		static const uint8_t ICON_LENGTH 	=8;		// 8 byte per icon
 		static const uint8_t ICON_OFFSET 	=2;		// icon 0 & 1 used for progress bar
@@ -138,19 +209,25 @@ class menu_mini_c
 		static const char pgmTextProfile[];
 		static const char pgmTextSettings[];        
 		static const char pgmTextCalibration[];        
-		static const char pgmTextRemote[];        
+		static const char pgmTextFile[];        
+		static const char pgmTextRemote[];      
+		static const char pgmTextPowerStd[];  
 		static const tft_mini_c::icon_et pgmIconsPower[];
 		static const tft_mini_c::icon_et pgmIconsProfile[]; 
 		static const tft_mini_c::icon_et pgmIconsSettings[]; 
 		static const tft_mini_c::icon_et pgmIconsCalibration[]; 
+		static const tft_mini_c::icon_et pgmIconsFile[]; 
+		static const tft_mini_c::icon_et pgmIconsPowerStd[];  
 		static const menu_pos_st pgmMenuPower[];
 		static const menu_pos_st pgmMenuProfile[];
 		static const menu_pos_st pgmMenuSettings[];
 		static const menu_pos_st pgmMenuCalibration[];
+		static const menu_pos_st pgmMenuFile[];
 		static const menu_pos_st pgmMenuDelete[];
-				
-		controller_c * controller;
-		parameter *	Parameter;
+		static const menu_pos_st pgmMenuPowerStd[];
+		controller_c * 	controller;
+		parameter 	*	Parameter;
+		log_c		* 	Log;
 		
 		tft_mini_c		Lcd{LCD_CAT4004_PIN,LCD_CAT4004_TYP};
 
@@ -176,6 +253,7 @@ class menu_mini_c
 		profile_edit_st		profile_edit;
 		settings_edit_st	settings_edit;
 		calibration_edit_st	calibration_edit;
+		file_edit_s			file_edit;
 
 		Version_c			Version;
 
@@ -188,10 +266,13 @@ class menu_mini_c
 		uint8_t menu_pos_items(const menu_pos_st * menuPos);
 		
 		void doPower(void);
+		void doPowerStandard(void);
 		void doProfile(void);
 		void doSettings(void);
 		void doCalibration(void);
-		void doDelete(void);
+		void doDeleteParam(void);
+		void doDeleteLog(void);
+		void doFile(void);
 		void doRemote(void);
 		
 		void setOptions(void);		

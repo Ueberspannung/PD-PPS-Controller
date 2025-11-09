@@ -1,12 +1,16 @@
 //#include <Arduino.h>
 #include "parameter.h"
-#include "src/ASCII/ASCII_ctrl.h"
+#include "../ASCII/ASCII_ctrl.h"
+#include "../memory/sd_detect.h"
+#include "../tool/convert.h"
+
 /*
 #define PRINTLN(x) 		Serial1.println(x)
 #define PRINTLN_HEX(x) 	Serial1.println(x,HEX)
 #define PRINT(x)		Serial1.print(x)
 #define PRINT_HEX(x)	Serial1.print(x,HEX)
 */
+
 #define PRINTLN(x)
 #define PRINTLN_HEX(x)
 #define PRINT(x)
@@ -17,18 +21,22 @@ const uint8_t PROGMEM parameter::pgmFF[]={	0xFF, 0xFF, 0xFF, 0xFF,
 											0xFF, 0xFF, 0xFF, 0xFF,
 											0xFF, 0xFF, 0xFF, 0xFF };
 const char parameter::configFileName[]= 	"PD-PPS.SET";
-const char parameter::configIDList[]=		"VoltageCalibrationReading_mV=\0"	// ITEM_CAL_U ,
-											"VoltageCalibrationReference_mV=\0"	// ITEM_REF_U,
-											"CurrentCalibrationReading_mA=\0"	// ITEM_CAL_I,
-											"CurrentCalibrationReference_mA=\0"	// ITEM_REF_I,
-											"OutputVoltageSetting_mV=\0"		// ITEM_SET_U,
-											"OutputCurrentSetting_mA=\0"		// ITEM_SET_I,
-											"DisplayBrightness_percentage=\0"	// ITEM_BRIGHTNESS,
-											"PPS-Mode_on (0/1)=\0"				// ITEM_PPS,
-											"AutomaticSetup_on (0/1)=\0"		// ITEM_AUTO_SET,
-											"AutomaticPower_on (0/1)=\0"		// ITEM_AUTO_ON,
-											"RegulatorMode (0-3)=\0"			// ITEM_REGULATOR,
-											"\0";								// ITEM_END
+const char parameter::configIDList[]=		"VoltageCalibrationReading_mV=\0"	// ITEM_CAL_U ,			
+											"VoltageCalibrationReference_mV=\0"	// ITEM_REF_U,          
+											"CurrentCalibrationReading_mA=\0"	// ITEM_CAL_I,          
+											"CurrentCalibrationReference_mA=\0"	// ITEM_REF_I,          
+											"OutputVoltageSetting_mV=\0"		// ITEM_SET_U,          
+											"OutputCurrentSetting_mA=\0"		// ITEM_SET_I,          
+											"DisplayBrightness_percentage=\0"	// ITEM_BRIGHTNESS,     
+											"ProgramFileName=\0"				// ITEM_PROGRAM_NAME,   
+											"Flags=\0"							// ITEM_FLAGS           
+											"PPS-Mode_on (0/1)=\0"				// ITEM_PPS,            
+											"AutomaticSetup_on (0/1)=\0"		// ITEM_AUTO_SET,       
+											"AutomaticPower_on (0/1)=\0"		// ITEM_AUTO_ON,        
+											"RegulatorMode (0-3)=\0"			// ITEM_REGULATOR,      
+											"LogInterval (0-9)=\0"				// ITEM_LOGGING,        
+											"extendedMenu (0/1)=\0"				// ITEM_MENU,           
+											"\0";								// ITEM_END             
 
 parameter::parameter()
 {	// parameter
@@ -44,7 +52,6 @@ parameter::parameter()
 
 bool parameter::process(void)		// returns true if busy
 {	// processe
-
 	switch (paramState)
 	{	//	switch (paramState)
 		case para_start:
@@ -218,7 +225,35 @@ void parameter::setVoltage_mV(uint16_t VoltageStep)
 void parameter::setCurrent_mA(uint16_t CurrentStep)
 {	//	setVoltageStep
 	Parameter.setI=CurrentStep;
-}	//	setVoltageStep
+}	//	setVoltageStep              
+
+void parameter::setLogInteval(log_c::logInterval_et interval)
+{	// setLogInterval
+	Parameter.Logging=(uint8_t)interval;
+}	// setLogInterval
+
+void parameter::setExtendedMenu(bool bExtended)
+{	// setExtendedMenu
+	Parameter.Menu=bExtended;
+}	// setExtendedMenu
+
+
+void parameter::setProgramName(const char * pName)
+{	// setProgramName
+	uint8_t n;
+	for (n=0; n<=ProgramNameLenght; n++)
+		Parameter.ProgramName[n]=NUL;
+	for (n=0; (n<ProgramNameLenght) && (pName[n]!=NUL); n++)
+		Parameter.ProgramName[n]=pName[n];
+}	// setProgramName
+
+
+void parameter::setFlags(const uint8_t *pFlags)
+{	// setFlags
+	uint8_t n;
+	for (n=0; n<FlagNumber; n++)
+		Parameter.Flags[n]=pFlags[n];
+}	// setFlags
 
 uint8_t parameter::getBrightness(void)
 {	// get Brightness
@@ -266,6 +301,41 @@ uint16_t parameter::getCurrent_mA(void)
 {	// getCurrentStep
 	return Parameter.setI;
 }	// getCurrentStep
+
+log_c::logInterval_et parameter::getLogInterval(void)
+{	//	getLogInterval
+	return (log_c::logInterval_et)Parameter.Logging;
+}	// 	getLogInterval
+
+bool parameter::getExtendedMenu(void)
+{	// getExtendedMenu
+	return Parameter.Menu;
+}	// getExtendedMenu
+
+void parameter::getProgramName(char * pName)
+{	// getProgramName
+	uint8_t n;
+	for (n=0; n<=ProgramNameLenght; n++)
+		pName[n]=Parameter.ProgramName[n];
+}	// getProgramName
+
+const char * parameter::getProgramName(void)
+{	// getProgramName
+	return Parameter.ProgramName;
+}	// getProgramName
+
+void parameter::getFlags(uint8_t *pFlags)
+{	// getFlags
+	for (uint8_t n=0; n<FlagNumber;n++)
+		pFlags[n]=Parameter.Flags[n];
+}	// getFlags
+
+
+
+bool parameter::hasSD(void)
+{	// wrapper for sd_detect
+	return sd_detect.present();
+}	// wrapper for sd_detect
 
 /* ************************************************
  * privta funkctions
@@ -346,8 +416,14 @@ void parameter::setInitData(void)
 	Parameter.autoSet	=false;	// Flag for automatic setup to last settings on startup
 	Parameter.autoOn	=false;	// implies autoSet but switches output on startup
 	Parameter.CVCC		=controller_c::CONTROLLER_MODE_OFF;
+	Parameter.Logging	=log_c::LOG_OFF;
+	Parameter.Menu		=false;	// default is standard
 	Parameter.dir		=false;	// indicator for rotation memory usage
 	bDirFlag			=false;	// initial diriction not swapped
+	for (uint8_t n=0; n<=ProgramNameLenght; n++)
+		Parameter.ProgramName[n]=NUL;
+	for (uint8_t n=0; n<FlagNumber; n++)
+		Parameter.Flags[n]=0;
 }	// 	setInitData
 
 void parameter::process_para_start(void)
@@ -355,12 +431,12 @@ void parameter::process_para_start(void)
 	uint16_t Flag;
 
 	memoryType=NO_MEMORY;
-	// check for eeprom
-	if (Eeprom.test())
-		memoryType=EEPROM;
-	// prefere SD Card
+	// check for SD Card
 	if (hasSD())
 		memoryType=SDCARD;
+	// check for eeprom (preferred)
+	if (Eeprom.test())
+		memoryType=EEPROM;
 
 	switch (memoryType)
 	{	// switch memoryTyoe
@@ -663,7 +739,6 @@ void parameter::readConfigLine(void)
 	parameter_et param;
 	uint8_t	 	 cnt=0;
 	char 		 data=NUL;
-	uint16_t	 val;
 
 
 	while (configFile.available() && (data!=LF))
@@ -673,61 +748,68 @@ void parameter::readConfigLine(void)
 		cnt=(cnt+1) & (configBufferSize-1);
 	}	// read line
 	configBuffer[cnt]=NUL;
+
+	for (uint8_t n=0; n<cnt; n++)
+		if (configBuffer[n]<SPACE)
+			configBuffer[n]=NUL;
 	
 	param=findConfigID(configBuffer);
-	if (param!=ITEM_END)
-	{	// config ID gefunden
-		cnt=getConfigIDLen(param);
-		// skip spaces non numbers
-		while ( ( (configBuffer[cnt]<'0') ||
-				  (configBuffer[cnt]>'9') ) &&
-				(configBuffer[cnt]!=NUL) )
-			cnt++;
-		// convert to val
-		val=0;
-		while ( (configBuffer[cnt]>='0') &&
-				(configBuffer[cnt]<='9') )
-		{
-			val=val*10;
-			val=val+configBuffer[cnt]-'0';
-			cnt++;
-		}
-	}	// config ID gefunden
+	cnt=getConfigIDLen(param);
 	
 	switch (param)
 	{	// switch param
 		case ITEM_CAL_U:
-			Parameter.CalU=val;
+			Parameter.CalU=convert_c(&configBuffer[cnt]).getUnsigned(0);
 			break;
 		case ITEM_REF_U:
-			Parameter.RefU=val;
+			Parameter.RefU=convert_c(&configBuffer[cnt]).getUnsigned(0);
 			break;
 		case ITEM_CAL_I:
-			Parameter.CalI=val;
+			Parameter.CalI=convert_c(&configBuffer[cnt]).getUnsigned(0);
 			break;
 		case ITEM_REF_I:
-			Parameter.RefI=val;
+			Parameter.RefI=convert_c(&configBuffer[cnt]).getUnsigned(0);
 			break;
 		case ITEM_SET_U:
-			Parameter.setU=val;
+			Parameter.setU=convert_c(&configBuffer[cnt]).getUnsigned(0);
 			break;
 		case ITEM_SET_I:
-			Parameter.setI=val;
+			Parameter.setI=convert_c(&configBuffer[cnt]).getUnsigned(0);
 			break;
 		case ITEM_BRIGHTNESS:
-			Parameter.Brightness=val;
+			Parameter.Brightness=convert_c(&configBuffer[cnt]).getUnsigned(0);
+			break;
+		case ITEM_PROGRAM_NAME:
+			while (configBuffer[cnt]==SPACE) cnt++;
+			for (uint8_t n=0; n<=ProgramNameLenght; n++) Parameter.ProgramName[n]=NUL;
+			for (uint8_t n=0; (n<=ProgramNameLenght) & (configBuffer[cnt+n]!=NUL); n++)
+				Parameter.ProgramName[n]=configBuffer[cnt+n];
+			break;
+		case ITEM_FLAGS:
+			for (uint8_t n=0; n<FlagNumber;n ++)
+			{
+				Parameter.Flags[n]=convert_c(&configBuffer[cnt+n]).getUnsigned(0);
+				while ((configBuffer[cnt+n]!=',') && (configBuffer[cnt+n]!=NUL)) cnt++;
+				if (configBuffer[cnt+n]==',') cnt++;
+			}
 			break;
 		case ITEM_PPS:
-			Parameter.PPS=val;
+			Parameter.PPS=convert_c(&configBuffer[cnt]).getUnsigned(0);
 			break;
 		case ITEM_AUTO_SET:
-			Parameter.autoSet=val;
+			Parameter.autoSet=convert_c(&configBuffer[cnt]).getUnsigned(0);
 			break;
 		case ITEM_AUTO_ON:
-			Parameter.autoOn=val;
+			Parameter.autoOn=convert_c(&configBuffer[cnt]).getUnsigned(0);
 			break;
 		case ITEM_REGULATOR:
-			Parameter.CVCC=val;
+			Parameter.CVCC=convert_c(&configBuffer[cnt]).getUnsigned(0);
+			break;
+		case ITEM_LOGGING:
+			Parameter.Logging=convert_c(&configBuffer[cnt]).getUnsigned(0);
+			break;
+		case ITEM_MENU:
+			Parameter.Menu=convert_c(&configBuffer[cnt]).getUnsigned(0);
 			break;
 		case ITEM_END:
 			/* FALLTHRU */
@@ -810,6 +892,17 @@ void parameter::writeConfigLine(void)
 		case ITEM_BRIGHTNESS:
 			configFile.println(Parameter.Brightness);
 			break;
+		case ITEM_PROGRAM_NAME:
+			configFile.println(Parameter.ProgramName);
+			break;
+		case ITEM_FLAGS:
+			for (uint8_t n=0; n<FlagNumber; n++)
+			{
+				configFile.print(Parameter.Flags[n]);
+				configFile.print(", ");
+			}
+			configFile.println();
+			break;
 		case ITEM_PPS:
 			configFile.println(Parameter.PPS);
 			break;
@@ -821,6 +914,12 @@ void parameter::writeConfigLine(void)
 			break;
 		case ITEM_REGULATOR:
 			configFile.println(Parameter.CVCC);
+			break;
+		case ITEM_LOGGING:
+			configFile.println(Parameter.Logging);
+			break;
+		case ITEM_MENU:
+			configFile.println(Parameter.Menu);
 			break;
 		case ITEM_END:
 			/* FALLTHRU */

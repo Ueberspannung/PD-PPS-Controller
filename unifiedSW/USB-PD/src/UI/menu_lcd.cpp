@@ -1,7 +1,9 @@
 #include "Arduino.h"
 #include "menu_lcd.h"
 #include "../button/rotary_button.h"
-#include "../../messages.h"
+#include "../tool/messages.h"
+#include "../tool/convert.h"
+#include "../ASCII/ASCII_ctrl.h"
 
 #define DEBUG_BAUD (115200)
 
@@ -35,21 +37,27 @@ const uint8_t menu_lcd_c::icon_tab[][ICON_LENGTH] = {   //
 			{0x01,0x02,0x04,0x0F,0x1E,0x04,0x08,0x10}, 	// (2) icon_flash
 			{0x11,0x11,0x1B,0x0E,0x0E,0x0E,0x0E,0x0E}, 	// (3) icon_settings
 			{0x04,0x0E,0x11,0x15,0x11,0x0E,0x04,0x00},	// (4) icon_calibration
-			{0x00,0x0E,0x017,0x13,0x17,0xE,0x00,0x00},	// (5) icon_contrast
+			{0x00,0x0E,0x17,0x13,0x17,0x0E,0x00,0x00},	// (5) icon_contrast
 			{0x00,0x11,0x12,0x1C,0x10,0x1F,0x00,0x00},	// (6) icon_regulator
 			{0x00,0x00,0x01,0x02,0x14,0x08,0x00,0x00}, 	// (7) icon_ok
-			{0x04,0x04,0x15,0x0E,0x04,0x11,0x11,0x1F},	// (8) icon_save
+			{0x04,0x04,0x15,0x0E,0x04,0x11,0x1F,0x00},	// (8) icon_log
 			{0x0E,0x1F,0x00,0x1F,0x15,0x15,0x15,0x0E},	// (9) icon_delete
-			{0x0E,0x11,0x1F,0x00,0x12,0x15,0x09,0x00}	// (10) icon_sdcard
+			{0x0C,0x10,0x08,0x06,0x1D,0x05,0x05,0x06},	// (10) icon_sdcard
+			{0x13,0x0F,0x17,0x19,0x02,0x1A,0x1A,0x19},	// (11) icon_sdcard_active
+			{0x04,0x0E,0x15,0x04,0x04,0x11,0x1F,0x00},	// (12) icon_prg
+			{0x00,0x01,0x01,0x05,0x05,0x15,0x15,0x00},	// (13) icon_step 
+			{0x1C,0x16,0x17,0x11,0x11,0x11,0x1F,0x00},	// (14) icon_file
+			{0x00,0x1F,0x00,0x1F,0x00,0x1F,0x00,0x00},	// (15) icon_menu
+			{0x00,0x04,0x02,0x1F,0x02,0x04,0x00,0x00},	// (16) icon_right
+			{0x00,0x04,0x08,0x1F,0x08,0x04,0x00,0x00},	// (17) icon_left
+			{0x00,0x04,0x04,0x15,0x0E,0x04,0x00,0x00},	// (18) icon_down
+			{0x00,0x04,0x0E,0x15,0x04,0x04,0x00,0x00},	// (19) icon_up
+			{0x06,0x09,0x09,0x06,0x00,0x00,0x00,0x00}	// (20) icon_degree
 														// icon_cancel "x"
 			};
 			/* *********************************************
 				currently not used
 			{0x00,0x00,0x00,0x00,0x00,0x15,0x00,0x00}, // ...
-			{0x00,0x04,0x02,0x1F,0x02,0x04,0x00,0x00}, // ->
-			{0x00,0x04,0x08,0x1F,0x08,0x04,0x00,0x00}, // <-
-			{0x00,0x04,0x04,0x15,0x0E,0x04,0x00,0x00}, // dn
-			{0x00,0x04,0x0E,0x15,0x04,0x04,0x00,0x00}, // up
 			*/
 													//	 01234567890123456789
 const char menu_lcd_c::pgmTextStart[] =					" PD/PPS-Controller  "
@@ -58,11 +66,12 @@ const char menu_lcd_c::pgmTextStart[] =					" PD/PPS-Controller  "
 														"Build:              ";
 
 													//   [.  .  .  .  .]  (.)
+													//   [. . . . .]  <.> (.)
 													//	 01234567890123456789
 const char menu_lcd_c::pgmTextPower[] =					"Mode (x:...) [UI^] !"
-														"     UU.UU V  I.II A"
+														"SET  UU.UU V  I.II A"
 														"OUT  UU.UU V  I.II A"
-														"[\x03  \x04  \x05  \x06  x]  (\x02)";
+														"[\x01 \x02 \x03 \x04 x]  <.> (.)";
 
 													/* ******************************
 													 * alternate menu:
@@ -106,30 +115,47 @@ const char menu_lcd_c::pgmTextPower[] =					"Mode (x:...) [UI^] !"
 const char menu_lcd_c::pgmTextProfile[] =				" # 1 / n  (...)     "
 														"U= UU.UU V - UU.UU V"
 														"I=  I.II A max      "
-														"[\x03  \x04  x]        (\x02)";
+														"[\x01  \x02  x]        (.)";
 
 													//   (.)=auto  (.)= 100%
 													//   [. setOutput .  .  .]     (.)
+													//   [.  .  .  .  .]    (.)
 													//	 01234567890123456789
-const char menu_lcd_c::pgmTextSettings[] =				"(\x03)=auto  (*)=\xA5    *"
-														"(\x04)=auto            "
-														"(\x05)=auto            "
-														"[\x03  \x06  \x07  x]     (\x02)";
-
+const char menu_lcd_c::pgmTextSettings[] =				"(\x01)=auto  (*)=      "
+														"(\x02)=auto  (\x04)=      "
+														"(\x03)=auto            "
+														"[\x01  \x05  \x06  \x07  x]  (.)";
+													
 													//   [.  .  .  .]     (.)
 													//	 01234567890123456789
 const char menu_lcd_c::pgmTextCalibration[] =			"Current Calibration "
 														" internal   I.III A "
 														" reference  I.III A "
-														"[\x03  \x04  \x05  x]     (\x02)";
+														"[\x01  \x02  \x03  x]     (.)";
 
 													//	 01234567890123456789
 const char menu_lcd_c::pgmTextRemote[] =				"Vbus UU.UUUV [UI^] !"
 														"SET  UU.UU V  I.II A"
 														"OUT  UU.UU V  I.II A"
-														"[REMOTE]         (.)";
+														"TMP  00.0 \x05" "C <.> (.)";
+														 
 													//   [.  .  .  .]     (.)
 
+													//	 01234567890123456789
+const char menu_lcd_c::pgmTextPowerStd[] =				"PD/PPS-Controller   "
+														"SET  UU.UU V  I.II A"
+														"OUT  UU.UU V  I.II A"
+														"[\x01  \x02]       < > (.)";
+													//	"[.  .]       { } (.)"
+
+													//   . . . .      .
+													//   .=12345678
+													//	 01234567890123456789
+const char menu_lcd_c::pgmTextFile[] =					"(\x02)=      \x05         "
+														"(\x03)= TBD            "
+														"                    "
+														"[\x01  \x04  x]        (.)";
+													//	ramp, check, cancel - File
 
 
  const menu_lcd_c::menu_icon_et menu_lcd_c::pgmIconsPower[]  =
@@ -138,7 +164,8 @@ const char menu_lcd_c::pgmTextRemote[] =				"Vbus UU.UUUV [UI^] !"
 															icon_flash,
 															icon_settings,
 															icon_ok,
-															icon_regulator,
+															icon_sdcard,
+															icon_degree,
 															icon_cancel};
 
  const menu_lcd_c::menu_icon_et menu_lcd_c::pgmIconsProfile[]  =
@@ -152,21 +179,52 @@ const char menu_lcd_c::pgmTextRemote[] =				"Vbus UU.UUUV [UI^] !"
 															icon_ramp,
 															icon_switch,
 															icon_regulator,
+															icon_menu,
 															icon_calibration,
+															icon_file,
 															icon_ok,
 															icon_cancel};
 
  const menu_lcd_c::menu_icon_et menu_lcd_c::pgmIconsCalibration[]  =
-														{ 	icon_settings,
+														{ 	icon_calibration,
 															icon_ramp,
 															icon_delete,
 															icon_ok,
 															icon_cancel};
 
+const menu_lcd_c::menu_icon_et menu_lcd_c::pgmIconsPowerStd[]  =
+														{	icon_ramp,
+															icon_switch,
+															icon_settings,
+															icon_regulator,
+															icon_step,
+															icon_sdcard,
+															icon_sdcard_active,
+															icon_cancel};
+
+ const menu_lcd_c::menu_icon_et menu_lcd_c::pgmIconsFile[]  =
+														{ 	icon_file,
+															icon_ramp,
+															icon_log,
+															icon_prg,
+															icon_ok,
+															icon_right,
+															icon_cancel};
+
+const menu_lcd_c::menu_icon_et menu_lcd_c::pgmIconsRemote[]  =
+														{ 	icon_step,
+															icon_ramp,
+															icon_regulator,
+															icon_sdcard,
+															icon_sdcard_active,
+															icon_degree,
+															icon_cancel};
+
+
  const menu_lcd_c::menu_pos_st menu_lcd_c::pgmMenuPower[]  =
 	{	{	menu_item_switch,	menu_item_switch, 	menu_mode_select,  		   1, 3,    0},
-		{	menu_item_profile,	menu_item_profile,	menu_mode_select,  		   4, 3,    0},
-		{	menu_item_settings,	menu_item_settings,	menu_mode_select,  		   7, 3,    0},
+		{	menu_item_profile,	menu_item_profile,	menu_mode_select,  		   3, 3,    0},
+		{	menu_item_settings,	menu_item_settings,	menu_mode_select,  		   5, 3,    0},
 		{	menu_item_activate1,menu_item_activate1,menu_mode_select_edit_pos,11, 1,    0},
 		{	menu_item_activate2,menu_item_activate2,menu_mode_select_edit_pos,19, 1,    0},
 		{	menu_item_edit,		menu_item_activate1,menu_mode_edit,			   6, 1, 1000},
@@ -174,8 +232,8 @@ const char menu_lcd_c::pgmTextRemote[] =				"Vbus UU.UUUV [UI^] !"
 		{	menu_item_edit,		menu_item_activate2,menu_mode_edit,			  14, 1, 1000},
 		{	menu_item_edit,		menu_item_activate2,menu_mode_edit,			  16, 1,  100},
 		{	menu_item_edit,		menu_item_activate2,menu_mode_edit,			  17, 1,   10},
-		{	menu_item_ok,		menu_item_end, 		menu_mode_select_edit,	  10, 3,    0},
-		{	menu_item_cancel,   menu_item_end,		menu_mode_select_edit,	  13, 3,    0},
+		{	menu_item_ok,		menu_item_end, 		menu_mode_select_edit,	   7, 3,    0},
+		{	menu_item_cancel,   menu_item_end,		menu_mode_select_edit,	   9, 3,    0},
 		{	menu_item_end,   	menu_item_end,		menu_mode_off,			   0, 0,    0}};
 
 const menu_lcd_c::menu_pos_st menu_lcd_c::pgmMenuProfile[]  =
@@ -188,12 +246,14 @@ const menu_lcd_c::menu_pos_st menu_lcd_c::pgmMenuProfile[]  =
 const menu_lcd_c::menu_pos_st menu_lcd_c::pgmMenuSettings[]  =
 	{	{	menu_item_power,		menu_item_power, 		menu_mode_select,	   	   1, 3, 0},
 		{	menu_item_calibration,	menu_item_calibration,	menu_mode_select,		   4, 3, 0},
+		{	menu_item_file,			menu_item_file,			menu_mode_select,  		   7, 3,    0},
 		{	menu_item_radio1,		menu_item_radio1,		menu_mode_select_edit_pos, 1, 0, 0},
 		{	menu_item_radio2,		menu_item_radio2,		menu_mode_select_edit_pos, 1, 1, 0},
 		{	menu_item_radio3,		menu_item_radio3,		menu_mode_select_edit_pos, 1, 2, 0},
 		{	menu_item_radio4,		menu_item_radio4,		menu_mode_select_edit_pos,11, 0, 0},
-		{	menu_item_ok,			menu_item_end, 			menu_mode_select_edit,	   7, 3, 0},
-		{	menu_item_cancel,		menu_item_end,			menu_mode_select_edit,	  10, 3, 0},
+		{	menu_item_radio5,		menu_item_radio5,		menu_mode_select_edit_pos,11, 1, 0},
+		{	menu_item_ok,			menu_item_end, 			menu_mode_select_edit,	  10, 3, 0},
+		{	menu_item_cancel,		menu_item_end,			menu_mode_select_edit,	  13, 3, 0},
 		{	menu_item_end,  		menu_item_end,			menu_mode_off,		   	   0, 0, 0}};
 
 const menu_lcd_c::menu_pos_st menu_lcd_c::pgmMenuCalibration[]  =
@@ -213,12 +273,35 @@ const menu_lcd_c::menu_pos_st menu_lcd_c::pgmMenuDelete[]  =
 		{	menu_item_cancel,		menu_item_end,		menu_mode_select_edit,	  10, 3,     0},
 		{	menu_item_end,  		menu_item_end,		menu_mode_off,	   	   0, 0,     0}};
 
+const menu_lcd_c::menu_pos_st menu_lcd_c::pgmMenuPowerStd[]  =
+	{	{	menu_item_switch,	menu_item_switch, 	menu_mode_select,  		   1, 3,    0},
+		{	menu_item_settings,	menu_item_settings,	menu_mode_select,  		   4, 3,    0},
+		{	menu_item_activate1,menu_item_activate1,menu_mode_select_edit_pos,11, 1,    0},
+		{	menu_item_activate2,menu_item_activate2,menu_mode_select_edit_pos,19, 1,    0},
+		{	menu_item_edit,		menu_item_activate1,menu_mode_edit,			   6, 1, 1000},
+		{	menu_item_edit,		menu_item_activate1,menu_mode_edit,			   9, 1,   20},
+		{	menu_item_edit,		menu_item_activate2,menu_mode_edit,			  14, 1, 1000},
+		{	menu_item_edit,		menu_item_activate2,menu_mode_edit,			  16, 1,  100},
+		{	menu_item_edit,		menu_item_activate2,menu_mode_edit,			  17, 1,   10},
+		{	menu_item_end,   	menu_item_end,		menu_mode_off,			   0, 0,    0}};
 
-menu_lcd_c::menu_lcd_c(controller_c *  controller, parameter * Parameter)
+
+const menu_lcd_c::menu_pos_st menu_lcd_c::pgmMenuFile[]  =
+	{	{	menu_item_power,		menu_item_power, 	menu_mode_select,	   	   1, 3,	 0},
+		{	menu_item_radio1,		menu_item_radio1,	menu_mode_select_edit_pos, 1, 0,	 0},
+		{	menu_item_radio2,		menu_item_radio2,	menu_mode_select_edit_pos, 1, 1,	 0},
+		{	menu_item_ok,			menu_item_end, 		menu_mode_select_edit,	   4, 3,	 0},
+		{	menu_item_cancel,		menu_item_end,		menu_mode_select_edit,	   7, 3,	 0},
+		{	menu_item_end,  		menu_item_end,		menu_mode_off,		   	   0, 0,	 0}};
+
+
+menu_lcd_c::menu_lcd_c(controller_c *  controller, parameter * Parameter, log_c * Log)
 {	// menu
 	main_state=menu_init_start;
 	this->controller=controller;
 	this->Parameter=Parameter;
+	this->Log=Log;
+	iconFlags=0;
 }	// menu
 
 void menu_lcd_c::process(void)
@@ -246,7 +329,6 @@ void menu_lcd_c::process(void)
 			Lcd.init(20,4);
 			Lcd.BacklightOn(true);
 			Lcd.DisplayOn(true);
-			Lcd.ProgressBarInit(0,3,20,0);
 			Lcd.putChar_P(0,0,pgmTextStart);
 			Lcd.putChar_P(8,2,Version.pgmGetVersion());
 			Lcd.putChar_P(8,3,Version.pgmGetBuiltDate());
@@ -259,6 +341,7 @@ void menu_lcd_c::process(void)
 			{
 				MENU_DEBUG_PRINTLN2("Reading Config");
 				Lcd.putChar(0,2,F("reading config  ..."));
+				Lcd.ProgressBarInit(0,3,20,0);
 				main_state=menu_read_parameter;
 			}
 			break;
@@ -278,6 +361,7 @@ void menu_lcd_c::process(void)
 				MENU_DEBUG_PRINT2("RegMode="); 	MENU_DEBUG_PRINTLN2(Parameter->getCVCC());
 				MENU_DEBUG_PRINT2("StartU ="); 	MENU_DEBUG_PRINTLN2(Parameter->getVoltage_mV());
 				MENU_DEBUG_PRINT2("StartI ="); 	MENU_DEBUG_PRINTLN2(Parameter->getCurrent_mA());
+
 				uint16_t Cal,Ref;
 				Parameter->getCalU(&Cal,&Ref);
 				MENU_DEBUG_PRINT2("Cal U C="); 	MENU_DEBUG_PRINTLN2(Cal);
@@ -286,7 +370,7 @@ void menu_lcd_c::process(void)
 				MENU_DEBUG_PRINT2("Cal I C="); 	MENU_DEBUG_PRINTLN2(Cal);
 				MENU_DEBUG_PRINT2("Cal I R="); 	MENU_DEBUG_PRINTLN2(Ref);
 
-				Lcd.ProgressSet(0);
+				Lcd.ProgressBarInit(0,0,0,0);
 				Lcd.putChar(0,2,F("reading Source Caps"));
 				main_state=menu_get_pd_data;
 				MENU_DEBUG_PRINTLN2("reading Source Caps");
@@ -330,11 +414,34 @@ void menu_lcd_c::process(void)
 			switch (active_menu)
 			{	// slect menu to show
 				case menu_item_power:
-					power_edit.uSet=controller->get_set_voltage();
-					power_edit.iSet=controller->get_set_current();
-					power_edit.uEdit=power_edit.uSet;
-					power_edit.iEdit=power_edit.iSet;
-					draw_menu(pgmTextPower,pgmIconsPower);
+					if (Parameter->getExtendedMenu())
+					{	// ok, extended menu 
+						power_edit.uSet=controller->get_set_voltage();
+						power_edit.iSet=controller->get_set_current();
+						power_edit.uEdit=power_edit.uSet;
+						power_edit.iEdit=power_edit.iSet;
+						draw_menu(pgmTextPower,pgmIconsPower);
+					}	// ok, extended menu 
+					else
+					{	// no, standard menu
+						active_menu=menu_item_power_standard;
+						main_state=menu_start;
+					}	// no, standard menu
+					break;
+				case menu_item_power_standard:
+					if (!Parameter->getExtendedMenu())
+					{	// ok, standard menu 
+						power_edit.uSet=controller->get_set_voltage();
+						power_edit.iSet=controller->get_set_current();
+						power_edit.uEdit=power_edit.uSet;
+						power_edit.iEdit=power_edit.iSet;
+						draw_menu(pgmTextPowerStd,pgmIconsPowerStd);
+					}	// ok, standard menu 
+					else
+					{	// no, extende menu
+						active_menu=menu_item_power;
+						main_state=menu_start;
+					}	// no, extende menu
 					break;
 				case menu_item_profile:
 					if (controller->get_profile_cnt()!=0)
@@ -354,8 +461,9 @@ void menu_lcd_c::process(void)
 					settings_edit.AutoSet=Parameter->getAutoSet();
 					settings_edit.CVCC=(uint8_t)Parameter->getCVCC();
 					settings_edit.Brightness=Parameter->getBrightness();
+					settings_edit.MenuExt=Parameter->getExtendedMenu();
 					draw_menu(pgmTextSettings,pgmIconsSettings);
-					Lcd.ProgressBarInit(15,0,4,0);
+					//Lcd.ProgressBarInit(15,0,4,0);
 					break;
 				case menu_item_calibration:
 				/* fall through */
@@ -367,8 +475,13 @@ void menu_lcd_c::process(void)
 					calibration_edit.measure=false;
 					draw_menu(pgmTextCalibration,pgmIconsCalibration);
 					break;
+				case menu_item_file:
+					file_edit.logInterval=Log->getInterval();
+					file_edit.logFileNum=Log->getLogFileNumber();
+					draw_menu(pgmTextFile,pgmIconsFile);
+					break;
 				case menu_item_remote:
-					draw_menu(pgmTextRemote,pgmIconsPower);
+					draw_menu(pgmTextRemote,pgmIconsRemote);
 					break;
 				default:
 					active_menu=menu_item_power;
@@ -382,6 +495,9 @@ void menu_lcd_c::process(void)
 				case menu_item_power:
 					doPower();
 					break;
+				case menu_item_power_standard:
+					doPowerStandard();
+					break;
 				case menu_item_profile:
 					doProfile();
 					break;
@@ -390,6 +506,9 @@ void menu_lcd_c::process(void)
 					break;
 				case menu_item_calibration:
 					doCalibration();
+					break;
+				case menu_item_file:
+					doFile();
 					break;
 				case menu_item_delete:
 					doDelete();
@@ -451,15 +570,21 @@ void menu_lcd_c::draw_menu(const char * menuText, const menu_icon_et * iconList)
 {	// draw menu
 	uint8_t n;
 	menu_icon_et icon;
+
 	Lcd.Clear();
 	Lcd.putChar_P(0,0,menuText);
+	
+	iconFlags=0;
 	n=0;
 	if (iconList)
 		while ((icon=(menu_icon_et)pgm_read_byte(&iconList[n]))!=icon_cancel)
 		{	// set icons
 			Lcd.DefineChar_P(ICON_OFFSET+n,icon_tab[icon]);
+			set_icon_defined(icon,true);
 			n++;
 		}	// set icons
+	Lcd.putChar(18,3,(char)NUL);
+
 }	// draw menu
 
 // process MenuTable,
@@ -635,6 +760,7 @@ uint8_t menu_lcd_c::menu_pos_items(const menu_pos_st * menuPos)
 
 void menu_lcd_c::doPower(void)
 {	// do Power Menu
+	static bool bTemperature=false;
 	uint16_t lastUpdateDelta=menuTime-lastUpdate;
 
 	if (((lastUpdateDelta>(UPDATE_CYCLE)) && (menu_mode==menu_mode_off)) ||
@@ -654,13 +780,35 @@ void menu_lcd_c::doPower(void)
 			PD_power_info_t power_info;
 			controller->get_profile_info(controller->get_current_profile(),&power_info);
 
-			Lcd.putChar(6,0,'1'+controller->get_current_profile());
-			Lcd.putChar_P(8,0,controller->get_profile_text(power_info.type));
+			if (!controller->is_output_enabled())
+			{
+				if (bTemperature)
+				{	// on -> off
+					// resotre Mode Text
+					Lcd.putChar(0,0,"Mode ( :   )");
+				}	// on -> off
+
+				Lcd.putChar(6,0,'1'+controller->get_current_profile());
+				Lcd.putChar_P(8,0,controller->get_profile_text(power_info.type));
+			}
 
 			if ((controller->get_operating_mode()!=controller_c::CONTROLLER_MODE_OFF) &&
 				(controller->is_PPS()))
 			{
-				Lcd.putChar(18,3,0x07);
+
+				if (!is_icon_defined(icon_regulator))
+				{	// not defined -> redefine
+					// could be either ramp ord step
+					if (is_icon_defined(icon_ramp))
+					{	// ramp defined, regulator needed
+						redefine_icon(pgmIconsPower,icon_ramp,icon_regulator);
+					}	// ramp_defined, regulator needed
+					else if (is_icon_defined(icon_step))
+					{	// step defined, regulator needed
+						redefine_icon(pgmIconsPower,icon_step,icon_regulator);
+					}	// step_defined, regulator needed
+				}	// not defined -> redefine
+
 				switch (controller->get_operating_mode())
 				{
 					case controller_c::CONTROLLER_MODE_CV:
@@ -679,14 +827,89 @@ void menu_lcd_c::doPower(void)
 			}
 			else
 			{
-				Lcd.putChar(18,3,0x02);
-				Lcd.putChar(13,0,F("[   ]"));
+				Lcd.putChar(13,0,F("[   ]"));				
+
+				if (controller->is_PPS())
+				{	// set ramp icon
+					if (!is_icon_defined(icon_ramp))
+					{	// not defined -> redefine
+						// could be either ramp ord step
+						if (is_icon_defined(icon_step))
+						{	// ramp defined, regulator needed
+							redefine_icon(pgmIconsPower,icon_step,icon_ramp);
+						}	// ramp_defined, regulator needed
+						else if (is_icon_defined(icon_regulator))
+						{	// step defined, regulator needed
+							redefine_icon(pgmIconsPower,icon_regulator,icon_ramp);
+						}	// step_defined, regulator needed
+					}	// not defined -> redefine
+				}	// set ramp icon
+				else
+				{	// set step icon
+					if (!is_icon_defined(icon_step))
+					{	// not defined -> redefine
+						// could be either ramp ord step
+						if (is_icon_defined(icon_ramp))
+						{	// ramp defined, regulator needed
+							redefine_icon(pgmIconsPower,icon_ramp,icon_step);
+						}	// ramp_defined, regulator needed
+						else if (is_icon_defined(icon_regulator))
+						{	// step defined, regulator needed
+							redefine_icon(pgmIconsPower,icon_regulator,icon_step);
+						}	// step_defined, regulator needed
+					}	// not defined -> redefine
+				}	// set step icon
 			}
 			force_update=false;
+			bTemperature=false;
 		}	// force_update
 
 		Lcd.putFixed(5,2,6,3,3,controller->get_output_voltage_mV());
 		Lcd.putFixed(13,2,6,3,3,controller->get_output_current_mA());
+
+		if (Parameter->hasSD() )
+		{
+			Lcd.putChar(14,3,icon2char(pgmIconsPower,icon_sdcard));
+
+			if (Log->getInterval()==log_c::LOG_OFF)
+			{	// stadard icon needed
+				if (!is_icon_defined(icon_sdcard_active))
+				{	// redefine icon
+					redefine_icon(pgmIconsPower,icon_sdcard_active,icon_sdcard);
+				}	// redefine icon
+			}	// stadard icon needed
+			else	
+			{	// active icon needed
+				if (!is_icon_defined(icon_sdcard_active))
+				{	// redefine icon
+					redefine_icon(pgmIconsPower,icon_sdcard,icon_sdcard_active);
+				}	// redefine icon
+			}	// active icon needed
+		}
+		else
+			Lcd.putChar(14,3,' ');
+
+		if (controller->is_output_enabled())
+		{
+			// print temperature
+			if (controller->has_temperature())
+			{	// display temperature
+				if (!bTemperature)
+				{	// off -> on
+					// set Temperature Text
+					Lcd.putChar(0,0,"TEMP       C");
+					Lcd.putChar(10,0,icon2char(pgmIconsPower,icon_degree));
+				}	// off -> on
+
+				Lcd.putFixed(4,0,5,1,1,controller->get_temperature_dC());
+				bTemperature=true;
+			}	// display temperature
+		}
+		else
+		{
+			force_update|=bTemperature;
+		}
+
 	}	// update voltage and current readings
 
 	Lcd.putFixed(5,1,5,2,3,power_edit.uEdit);
@@ -769,6 +992,194 @@ void menu_lcd_c::doPower(void)
 			break;
 	}	// switch menu_item
 }	// do Power Menu
+
+void menu_lcd_c::doPowerStandard(void)
+{	// do standard power menu
+	uint16_t lastUpdateDelta=menuTime-lastUpdate;
+
+	if (((lastUpdateDelta>(UPDATE_CYCLE)) && (menu_mode==menu_mode_off)) ||
+		((lastUpdateDelta>(UPDATE_CYCLE_SET)) && (menu_mode!=menu_mode_off)) ||
+		force_update)
+	{	// update voltage and current readings
+		// Update voltage & current settings and readings
+		lastUpdate=menuTime;
+		if (controller->is_constant_current_active())
+			Lcd.putChar(19,0,F("!"));
+		else
+			Lcd.putChar(19,0,F(" "));
+
+		// display settings independent from Menu
+		if (force_update)
+		{	// force_update
+			if (controller->is_PPS())
+			{	// PPS
+				if (controller->get_operating_mode()!=controller_c::CONTROLLER_MODE_OFF)
+				{	// regulated output
+					Lcd.putChar(18,3,icon2char(pgmIconsPowerStd,icon_regulator));
+				}	// regulated output
+				else 
+				{	// unregulated pps
+					Lcd.putChar(18,3,icon2char(pgmIconsPowerStd,icon_ramp));
+				}	// unregulated pps
+			}	// PPS
+			else
+			{	// FIX
+					Lcd.putChar(18,3,icon2char(pgmIconsPowerStd,icon_step));
+			}	// FIX
+			force_update=false;
+		}	// force_update
+
+		Lcd.putChar(5,2,convert_c(controller->get_output_voltage_mV(),3).getStringUnsigned(lineBuffer,6,3,"V"));
+		Lcd.putChar(13,2,convert_c(controller->get_output_current_mA(),3).getStringSigned(lineBuffer,6,3,"A"));
+
+		
+		if (Parameter->hasSD())
+		{
+			if (Log->getInterval()==log_c::LOG_OFF)
+				Lcd.putChar(14,3,icon2char(pgmIconsPowerStd,icon_sdcard));
+			else	
+				Lcd.putChar(14,3,icon2char(pgmIconsPowerStd,icon_sdcard_active));
+		}
+		else
+			Lcd.putChar(16,3,' ');
+	}	// update voltage and current readings
+
+	Lcd.putChar(5,1,convert_c(power_edit.uEdit,3).getStringUnsigned(lineBuffer,5,2," V"));
+	Lcd.putChar(14,1,convert_c(power_edit.iEdit,3).getStringUnsigned(lineBuffer,4,2," A"));
+
+	process_button(pgmMenuPowerStd);
+
+	switch ((menu_item_et)pgm_read_byte(&pgmMenuPowerStd[menu_item].menu_item))
+	{	// switch menu_item
+		case menu_item_activate1:
+		case menu_item_activate2:
+			if (buttonState.buttonPressed)
+			{ // menu action
+				if (menu_mode==menu_mode_select_edit)
+				{	// edit finished
+					menu_mode=menu_mode_select;
+					lock_item=menu_item_end;
+					if (controller->is_PPS())
+					{	// set new pps data
+						power_edit.uSet=power_edit.uEdit;
+						power_edit.iSet=power_edit.iEdit;
+
+						if (Parameter->getAutoSet())
+						{	// save settings
+							Parameter->setVoltage_mV(power_edit.uSet);
+							Parameter->setCurrent_mA(power_edit.iSet);
+							Parameter->write();
+						}	// save settings
+
+						controller->set_power(power_edit.uSet,power_edit.iSet);
+					}	// set new pps data
+					else if (controller->get_profile_cnt()!=0)
+					{	// set new fix profile
+						power_edit.uSet=power_edit.uEdit;
+						power_edit.iSet=power_edit.iEdit;
+
+						if (Parameter->getAutoSet())
+						{	// save setting for next start
+							Parameter->setVoltage_mV(power_edit.uSet);
+							Parameter->setCurrent_mA(power_edit.iSet);
+							Parameter->write();
+						}	// save setting for next start
+
+						controller->set_voltage(power_edit.uSet);
+
+						menu_mode=menu_mode_off;
+						menu_item=0;
+						main_state=menu_wait_pd_transition;
+						
+					}	// set new fix profile
+				}	// edit finished
+				else if (!controller->is_PPS())
+				{	// edit start and FIX Profile
+					if ((lock_item==menu_item_activate2) || 
+						(controller->get_profile_cnt()==0))
+					{	// item not available
+						menu_mode=menu_mode_select;
+						lock_item=menu_item_end;
+					}	// item not available
+					else
+					{	// get current settings
+						profile_edit.currentProfile=controller->get_current_profile();
+						profile_edit.lastProfile=profile_edit.currentProfile;
+						profile_edit.maxProfile=controller->get_profile_cnt();
+					}	// get current settigns
+				}// edit start and FIX Profile
+			} //  menu action
+			break;
+		case menu_item_edit:
+			if ((buttonState.buttonTurns) && (menu_mode==menu_mode_edit))
+			{	// turns, edit
+				if (controller->is_PPS())
+				{	// PPS mode
+					switch (lock_item)
+					{	// switch lock_item
+						case menu_item_activate1:
+							if (buttonState.buttonTurns>0)
+								power_edit.uEdit+=pgmMenuPowerStd[menu_item].edit_val;
+							else
+								power_edit.uEdit-=pgmMenuPowerStd[menu_item].edit_val;
+							if (power_edit.uEdit>controller->get_max_voltage_mV(power_edit.iEdit))
+								power_edit.uEdit=controller->get_max_voltage_mV(power_edit.iEdit);
+							if (power_edit.uEdit<controller->get_min_voltage_mV())
+								power_edit.uEdit=controller->get_min_voltage_mV();
+							break;
+						case menu_item_activate2:
+							if (buttonState.buttonTurns>0)
+								power_edit.iEdit+=pgmMenuPowerStd[menu_item].edit_val;
+							else
+								power_edit.iEdit-=pgmMenuPowerStd[menu_item].edit_val;
+							if (power_edit.iEdit>controller->get_max_current_mA(power_edit.uEdit))
+								power_edit.iEdit=controller->get_max_current_mA(power_edit.uEdit);
+							if (power_edit.iEdit<controller->get_min_current_mA())
+								power_edit.iEdit=controller->get_min_current_mA();
+							break;
+						default:
+							break;
+					}	// switch lock_item
+				}	// PPS mode
+				else if (controller->is_PD())
+				{	// FIX mode
+					if (buttonState.buttonTurns>0)
+					{	// increment
+						if (profile_edit.currentProfile<profile_edit.maxProfile)
+						{	// profiles available
+							profile_edit.currentProfile++;
+						}	// profiles available
+					}	// increment
+					else
+					{	// decrement
+						if (profile_edit.currentProfile>0)
+							profile_edit.currentProfile--;
+					}	// decrement
+
+					controller->get_profile_info(profile_edit.currentProfile,&profile_edit.PowerInfo);
+					if (profile_edit.PowerInfo.type!=PD_PDO_TYPE_FIXED_SUPPLY)
+					{	// no FIX profile, use last one
+						profile_edit.currentProfile--;
+						controller->get_profile_info(profile_edit.currentProfile,&profile_edit.PowerInfo);
+					}	// no FIX profile, use last one
+
+					power_edit.uEdit=profile_edit.PowerInfo.max_v;
+					power_edit.iEdit=profile_edit.PowerInfo.max_i;
+					
+					force_update=true;
+				}	// FIX mode
+			}	// turns, edit
+			break;
+		case menu_item_switch:
+			if (buttonState.buttonPressed)
+			{	// toggle output switch
+				controller->enable_output(!controller->is_output_enabled());
+			}	// toggle output switch
+		default:
+			break;
+	}	// switch menu_item
+}	// do standard power menu
+
 
 void menu_lcd_c::doProfile(void)
 {	// Profile Menu
@@ -931,9 +1342,14 @@ void menu_lcd_c::doSettings(void)
 				Lcd.putChar(4,2,F("off  "));
 				break;
 		}
+		if (settings_edit.MenuExt)
+			Lcd.putChar(14,1,"ext");
+		else
+			Lcd.putChar(14,1,"std");
 
 		// Brightness
-		Lcd.ProgressSet((uint16_t)settings_edit.Brightness);
+		// Lcd.ProgressSet((uint16_t)settings_edit.Brightness);
+		Lcd.putChar(14,0,convert_c(settings_edit.Brightness,0).getStringUnsigned(lineBuffer,3,0,"%"));
 		force_update=false;
 	}	// force_update
 
@@ -949,6 +1365,7 @@ void menu_lcd_c::doSettings(void)
 				Parameter->setAutoSet(settings_edit.AutoSet);
 				Parameter->setCVCC((controller_c::operating_mode_et)settings_edit.CVCC);
 				Parameter->setBrightness(settings_edit.Brightness);
+				Parameter->setExtendedMenu(settings_edit.MenuExt);
 				Parameter->write();
 				active_menu=menu_item_power;
 				main_state=menu_start;
@@ -993,6 +1410,14 @@ void menu_lcd_c::doSettings(void)
 					(settings_edit.Brightness>0))
 					settings_edit.Brightness--;
 				Lcd.SetBrightness(settings_edit.Brightness);
+				force_update=true;
+			}	// turns, edit
+			break;
+		case menu_item_radio5:
+			if ((menu_mode==menu_mode_select_edit_pos) &&
+				(buttonState.buttonTurns!=0))
+			{	// turns, edit
+				settings_edit.MenuExt=!settings_edit.MenuExt;
 				force_update=true;
 			}	// turns, edit
 			break;
@@ -1048,7 +1473,7 @@ void menu_lcd_c::doCalibration(void)
 			if (buttonState.buttonPressed)
 			{
 				main_state=menu_process;
-				Lcd.putChar(18,3,'\x04');
+				Lcd.putChar(18,3,icon2char(pgmIconsCalibration,icon_delete));
 				menu_mode=menu_mode_select_edit;
 				lock_item=menu_item_end;
 				menu_item=0;
@@ -1110,6 +1535,84 @@ void menu_lcd_c::doCalibration(void)
 	}	// switch menu_item
 }	// do Calibration Menu
 
+void menu_lcd_c::doFile(void)
+{	// do File Menu
+	uint16_t lastUpdateDelta=menuTime-lastUpdate;
+
+	if (lastUpdateDelta>(UPDATE_CYCLE_SET) || force_update)
+	{	// update current readings
+		if (Parameter->hasSD()||true)
+		{	// update settings
+			Lcd.putChar(12,0,convert_c(file_edit.logFileNum,0).getStringUnsignedZeros(lineBuffer,8,0));
+		}	// update settings
+		else
+		{
+			Lcd.putChar(12,0,"NO CARD ");
+		}
+		Lcd.putChar(4,0,Log->getLogIntervalText(file_edit.logInterval));
+		lastUpdate=menuTime;
+		force_update=false;
+	}	// update current readings
+
+	process_button(pgmMenuFile);
+
+	if (Parameter->hasSD()||true)
+	{	// process features
+		switch ((menu_item_et)pgm_read_byte(&pgmMenuFile[menu_item].menu_item))
+		{	// switch menu_item
+			case menu_item_ok:
+				if (buttonState.buttonPressed)
+				{	// button pressed
+					active_menu=menu_item_power;
+					main_state=menu_start;
+					menu_mode=menu_mode_off;
+					menu_item=0;
+					Parameter->setLogInteval(file_edit.logInterval);
+					Parameter->write();
+					Log->setInterval(file_edit.logInterval);
+					// store log / prog
+				}	// button pressed
+				break;
+			case menu_item_radio1:
+				if ((menu_mode==menu_mode_select_edit_pos) &&
+					(buttonState.buttonTurns!=0))
+				{	// turns, edit
+					if (buttonState.buttonTurns>0)
+						file_edit.logInterval=Log->nextInterval(file_edit.logInterval);
+					else
+						file_edit.logInterval=Log->previousInterval(file_edit.logInterval);
+					force_update=true;
+				}	// turns, edit
+				break;
+			case menu_item_radio2:
+				if ((menu_mode==menu_mode_select_edit_pos) &&
+					(buttonState.buttonTurns!=0))
+				{	// turns, edit
+					force_update=true;
+				}	// turns, edit
+				break;
+			case menu_item_cancel:
+				if (buttonState.buttonPressed)
+				{	// restore last settings
+				}	// restore last settings
+				break;
+			default:
+				break;
+		}	// switch menu_item
+	}	// process features
+	else
+	{	// nothing to do, reset selection
+		if (buttonState.buttonPressed)
+		{	// any press -> main menu
+			active_menu=menu_item_power;
+			main_state=menu_start;
+			menu_mode=menu_mode_off;
+			menu_item=0;
+		}	// any press -> main menu
+	}	// nothing to do, reset selection
+}	// do File Menu
+
+
 void menu_lcd_c::doDelete(void)
 {	// do Delete Menu
 	process_button(pgmMenuDelete);
@@ -1120,7 +1623,7 @@ void menu_lcd_c::doDelete(void)
 			if (buttonState.buttonPressed)
 			{	// button pressed
 				Parameter->clear(true);
-				Lcd.ProgressBarInit(12,3,8,0);
+				Lcd.ProgressBarInit(0,3,20,0);
 				main_state=menu_read_parameter;
 				menu_mode=menu_mode_off;
 				set_cursor(0,0);
@@ -1148,7 +1651,7 @@ void menu_lcd_c::doRemote(void)
 		if ((controller->get_operating_mode()!=controller_c::CONTROLLER_MODE_OFF) &&
 			(controller->is_PPS()))
 		{
-			Lcd.putChar(18,3,0x07);
+			Lcd.putChar(18,3,icon2char(pgmIconsRemote,icon_regulator));
 			switch (controller->get_operating_mode())
 			{
 				case controller_c::CONTROLLER_MODE_CV:
@@ -1167,15 +1670,31 @@ void menu_lcd_c::doRemote(void)
 		}
 		else
 		{
-			Lcd.putChar(18,3,0x02);
+			if (controller->is_PPS())
+				Lcd.putChar(18,3,icon2char(pgmIconsRemote,icon_ramp));
+			else
+				Lcd.putChar(18,3,icon2char(pgmIconsRemote,icon_step));
+
 			Lcd.putChar(13,0,F("[   ]"));
 		}
+		
+		if (Parameter->hasSD())
+		{
+			if (Log->getInterval()==log_c::LOG_OFF)
+				Lcd.putChar(14,3,icon2char(pgmIconsPowerStd,icon_sdcard));
+			else	
+				Lcd.putChar(14,3,icon2char(pgmIconsPowerStd,icon_sdcard_active));
+		}
+		else
+			Lcd.putChar(14,3,' ');
+
 
 		Lcd.putFixed(5,1,5,2,3,controller->get_set_voltage());
 		Lcd.putFixed(13,1,5,2,3,controller->get_set_current());
 		Lcd.putFixed(5,2,6,3,3,controller->get_output_voltage_mV());
 		Lcd.putFixed(13,2,6,3,3,controller->get_output_current_mA());
 		Lcd.putFixed(5,0,6,3,3,controller->get_Vbus_mV());
+		Lcd.putFixed(5,3,5,1,1,controller->get_temperature_dC());
 		force_update=false;
 	}	// update voltage and current readings
 
@@ -1219,3 +1738,65 @@ void menu_lcd_c::setOptions(void)
 
 	Lcd.SetBrightness(Parameter->getBrightness());
 }	// setOptions
+
+char menu_lcd_c::icon2char(const menu_icon_et * icon_list, menu_icon_et icon)
+{	// conver icon to char
+	char n=ICON_OFFSET;
+	
+	while ((*icon_list!=icon) && (*icon_list!=icon_cancel))
+	{	// search icon
+		 n++;
+		 icon_list++;
+	}	// search icon
+	if (*icon_list==icon_cancel) n='?';
+
+	return n;
+}	// conver icon to char
+
+bool menu_lcd_c::redefine_icon(const menu_icon_et * icon_list, menu_icon_et icon, menu_icon_et new_icon)
+{	// redefine existing icon in list
+	bool bOk=false;
+	uint8_t pos=ICON_OFFSET;
+	
+	
+	
+	while ((*icon_list!=icon) && (*icon_list!=icon_cancel))
+	{	// search icon
+		 pos++;
+		 icon_list++;
+	}	// search icon
+	
+	bOk=*icon_list!=icon_cancel;
+	
+	if (bOk)
+	{
+		 Lcd.DefineChar(pos,icon_tab[new_icon]);
+		 set_icon_defined(icon,false);
+		 set_icon_defined(new_icon,true);
+	}
+	
+	return bOk;
+}	// redefine existing icon in list
+
+
+bool menu_lcd_c::is_icon_defined(menu_icon_et icon)
+{	// is icon defined
+	uint32_t temp=1;
+	temp<<=icon;
+	return (iconFlags & temp)!=0;
+}	// is icon defined
+
+void menu_lcd_c::set_icon_defined(menu_icon_et icon, bool defined)
+{	// set_icon_defined
+	uint32_t temp=1;
+	temp<<=icon;
+	if (defined)
+	{	// set bit
+		iconFlags=iconFlags | temp;
+	}	// set bit
+	else
+	{	// clear bit
+		temp=~temp;
+		iconFlags=iconFlags & temp;
+	}	// clear bit
+}	// set_icon_defined

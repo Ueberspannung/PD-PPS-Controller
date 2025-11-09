@@ -5,19 +5,27 @@
 
 
 #include <stdint.h>
-#include "config.h"
-#include "src/FUSB302/PD_PPS.h"
-#include "src/LED/rgb_led.h"
+#include "../../config.h"
+#include "../FUSB302/PD_PPS.h"
+#include "../LED/rgb_led.h"
+
+#ifdef HWCFG_TMP_TYPE_TMP117
+	#include "../sensor/TMP117.h"
+	#define TMP TMP117
+#else
+	#include "../sensor/TMP1075.h"
+	#define TMP TMP1075_c
+#endif
 
 #ifdef HWCFG_ADC_TYPE_INA219
-	#include "src/sensor/INA219.h"
+	#include "../sensor/INA219.h"
 	#define INA INA219
 #else
-	#include "src/sensor/INA232.h"
+	#include "../sensor/INA232.h"
 	#define INA INA232
 #endif
 
-#include "src/tool/IIR.h"
+#include "../tool/IIR.h"
 
 class controller_c
 {
@@ -92,6 +100,9 @@ class controller_c
 		uint16_t get_output_voltage_mV(void);
 		int16_t get_output_current_mA(void);
 		
+		bool has_temperature(void);					// indicates if temperature sensor is presernt
+		int16_t	get_temperature_dC(void);			// gets temperature in  0,1°C 
+		
 		void set_output_current_calibration(uint16_t I_internal_val_mA, uint16_t I_reference_val_mA);
 		void reset_output_current_calibration(void);
 		
@@ -101,6 +112,7 @@ class controller_c
 		typedef enum:uint8_t {	CONTROLLER_INIT_PD,
 								CONTROLLER_INIT_MONITOR,
 								CONTROLLER_INIT_VBUS_IIR,
+								CONTROLLER_INIT_TEMPERATURE,
 								CONTROLLER_RUN,
 								CONTROLLER_end
 								} controller_state_et;
@@ -210,6 +222,7 @@ class controller_c
 											uint16_t				power_transition_timer;
 											uint16_t				output_voltage;
 											int16_t					output_current;
+											int16_t					temperature;
 											uint16_t				set_output_voltage;
 											uint16_t				set_output_current;
 											uint16_t				new_output_voltage;
@@ -228,6 +241,7 @@ class controller_c
 											bool					bus_power_ok;
 											bool					bus_power_change;
 											bool					first_run;
+											bool					has_temperature;
 										}	controller_state_st;
 
 
@@ -252,6 +266,7 @@ class controller_c
 		PD_PPS_c 	PD;
 		INA			monitor{ADC_BASE_ADDRESS};
 		rgb_led_c	power_led{POWER_LED_RED,POWER_LED_GREEN,POWER_LED_BLUE,POWER_LED_OFF};
+		TMP			temperature{HWCFG_TMP_I2C_ADDR,HWCFG_TMP_INT_PIN};
 
 		IIR<uint16_t,uint32_t> Vbus{3};
 		

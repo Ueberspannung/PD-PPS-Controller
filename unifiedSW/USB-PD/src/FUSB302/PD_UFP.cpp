@@ -201,7 +201,7 @@ void PD_UFP_c::handle_protocol_event(PD_protocol_event_t events)
     }    
     if (events & PD_PROTOCOL_EVENT_PS_RDY) {
         PD_power_info_t p;
-        uint8_t i, selected_power = PD_protocol_get_selected_power(&protocol);
+        uint8_t /* i, */ selected_power = PD_protocol_get_selected_power(&protocol);
         PD_protocol_get_power_info(&protocol, selected_power, &p);
         wait_ps_rdy = 0;
         if (p.type == PD_PDO_TYPE_AUGMENTED_PDO) {

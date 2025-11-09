@@ -208,48 +208,51 @@
   * only ARM support
   * 5.1 global config file and modified INA219
   * 5.2 added ST7735 mini display and menu, added INA232
+  * 5.3 added Logging Support for mini, terminal and serial API
+  * 	modified file structure
+  * 	added "sceduler" in MainTask to prevent PD reset during SD init
+  * 5.31 modified mini menu
+  * 5.32 standard and extended menu mode, statrup in PPS with CVCCmax at 5V/3A
+  * 	 standard mode available with only fix mode PD supply, too
+  * 5.33 implement mini menu extensions to lcd menu
+  * 	 fixed some compiler warnings
+  * 5.4	 implemented programming script accessible through Terminal Menu
+  * 	 commands:SET, JUMP, LOOP, WAIT, LOG, DISP, INFO, PASS, FAIL, LOAD, SAVE
   */
 
-//#define _TEST_
+/* ****************************************************************************
+ * Important Note:
+ * Boottime ist quite High ~2s
+ * - use modified Bootloader, 
+ *   this turns on the red LED before doin core initialiszation
+ * - modify startup.c 
+ *   in C:\Users\_user_\AppData\Local\Arduino15\packages\arduino\hardware\samd\1.8.14\cores\arduino\ on windows
+ *   or in .arduino15/packages/arduino/hardware/samd/1.8.14/cores/arduino/ in your home directory on linux
+ * - locate  "SYSCTRL->XOSC32K.reg = SYSCTRL_XOSC32K_STARTUP( 0x6u )" ~line 76
+ * - change 0x06 to 0x05. this is safe. according to the datasheet the external 32 k oscillator need max 30000 
+ *   cycles for startup. 0x05 sets the delay to 32768 cycles. this is 1s
+ * - one might try 0x04, which is 16384 cycles. This is slighltly shorter than the the typical startup of 
+ *   20k cylces but might work as well, if you encounter USB problems, change it back to 32768 cycles
+ */ 
 
-#ifdef _TEST_
-	#include <Wire.h>
-	#include "src/UI/menu_lcd.h"
-	#include "test.h"
-	
-	test_c test;
+#include "config.h"
+#include "hw_text.h"
+#include <Wire.h>
+#include "MainTask.h"
+mainTask_c MainTask{SerialUSB};
 
-	void setup()
-	{
-		Wire.begin();
-		Wire.setClock(400000);
-		Serial1.begin(115200);
-		test.init(0,controller_c::CONTROLLER_MODE_CV);
-	}
+void setup()
+{
+	Wire.begin();
+	Wire.setClock(400000);
+	Serial1.begin(115200);
+	MainTask.begin(115200);
+	pinMode(LED_BUILTIN,OUTPUT);
+	digitalWrite(LED_BUILTIN,LOW);
+}
 
-	void loop() {
-		test.do_test();
-	}
-#else
-	#include "config.h"
-	#include <Wire.h>
-	#include "UI.h"
-	UI_c UI{SerialUSB};
+void loop() 
+{
+	MainTask.process();
+}
 
-	void setup()
-	{
-		Wire.begin();
-		Wire.setClock(400000);
-		Serial1.begin(115200);
-		UI.begin(115200);
-		pinMode(LED_BUILTIN,OUTPUT);
-		digitalWrite(LED_BUILTIN,LOW);
-	}
-
-	void loop() 
-	{
-		UI.process();
-	}
-
-
-#endif

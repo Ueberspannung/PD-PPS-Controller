@@ -1,65 +1,67 @@
-#include "UI.h"
+#include "MainTask.h"
+#include "src/memory/sd_detect.h"
 
 
-
-UI_c::UI_c(HardwareSerial & port,	uint16_t RxTimeout_ms) : VT100_c(port,RxTimeout_ms)
+mainTask_c::mainTask_c(HardwareSerial & port,	uint16_t RxTimeout_ms) : VT100_c(port,RxTimeout_ms)
 {
 	init();
 }
 #ifdef HAS_USB_SERIAL
-UI_c::UI_c(Serial_ &  port,	uint16_t RxTimeout_ms) : VT100_c(port,RxTimeout_ms)
+mainTask_c::mainTask_c(Serial_ &  port,	uint16_t RxTimeout_ms) : VT100_c(port,RxTimeout_ms)
 {
 	init();
 }
 #endif
 
-void UI_c::init()
+void mainTask_c::init()
 {
-	Terminal.init(this,&Controller,&Parameter);
-	SerialIF.init(this,&Controller,&Parameter);
+	Terminal.init(this,&Controller,&Parameter,&Log, &Program);
+	SerialIF.init(this,&Controller,&Parameter,&Log, &Program);
+	Log.init(&Controller);
 	state=state_wait_for_parameter;
 	process_state=process_end;
 }
 
-void UI_c::SerialOpen(void)
+void mainTask_c::SerialOpen(void)
 {	// Serial API start
 	SerialIF.begin();
 	Menu.setRemote(true);
 }	// Serial API start
 
-void UI_c::SerialProcess(void)
+void mainTask_c::SerialProcess(void)
 {	// Serial API process
 	if (SerialIF.process())
         Menu.forceUpdate();
 }	// Serial API process
 
-void UI_c::SerialClose(void)
+void mainTask_c::SerialClose(void)
 {	// Serial API end
 	SerialIF.end();
 	Menu.setRemote(false);
 }	// Serial API end
 
-void UI_c::TerminalOpen(void)
+void mainTask_c::TerminalOpen(void)
 {	// TerminalOpen
 	Terminal.begin();
 	Menu.setRemote(true);
 }	// TerminalOpen
 
-void UI_c::TerminalProcess(void)
+void mainTask_c::TerminalProcess(void)
 {	// TerminalProcess
 	if (Terminal.process())
         Menu.forceUpdate();
 }	// TerminalProcess
 
-void UI_c::TerminalClose(void)
+void mainTask_c::TerminalClose(void)
 {	// TerminalClose
 	Terminal.end();
 	Menu.setRemote(false);
 }	// TerminalClose
 
-void UI_c::process(void)
+void mainTask_c::process(void)
 {	// process
 	Controller.process();
+	
 	
 	if (!Controller.is_busy())
 	{	// controller is not busy
@@ -76,6 +78,14 @@ void UI_c::process(void)
 				break;
 			case process_serial:
 				VT100_c::process();	
+				process_state=process_log;
+				break;
+			case process_log:
+				Log.process();
+				process_state=process_prog;
+				break;
+			case process_prog:
+				Program.process();
 				process_state=process_param;
 				break;
 			default:
@@ -87,7 +97,7 @@ void UI_c::process(void)
 	switch (state)
 	{
 		case state_wait_for_parameter:
-			if (!Parameter.isBusy())
+			if (!Parameter.isBusy() && !Log.isBusy() && !Program.isBusy())
 			{
 				state=state_wait_for_controller;
 			}
@@ -130,25 +140,45 @@ void UI_c::process(void)
 						u=Controller.get_fix_voltage_mV(u);
 						startup_ok=	startup_ok &&
 									(u==Parameter.getVoltage_mV());
-
 						Controller.set_voltage(u);
 					}	// fix
+
+					if (*Parameter.getProgramName())
+						Program.setProgramFileName(Parameter.getProgramName());
+
 				} // AutoSet
+				else if (!Parameter.getExtendedMenu())
+				{ 	// standard menu and not autoset -> try PPS
+					// try 5V 3A (=15W smallest PD-supply i can think of)
+					Controller.set_operating_mode(controller_c::CONTROLLER_MODE_CVCCmax);
+					Controller.set_power(5000,3000);
+				}	// standard menu and not autoset -> try PPS
+
+				if (Log.hasSD())
+				{	// SD Card avaulable
+					Log.setInterval(Parameter.getLogInterval()); 
+				}	// SD Card avaulable 
 
 				state=state_wait_for_power;
 			}
 			break;
 		case state_wait_for_power:
-			if (Controller.is_power_ready())
+			if (Controller.is_power_ready() && !Program.isBusy())
 			{
 				if (startup_ok)
-					Controller.enable_output(Parameter.getAutoOn());
+				{
+					if ((*Parameter.getProgramName()==NUL) || !Program.hasSD()) // no program => switch on Output
+						Controller.enable_output(Parameter.getAutoOn());
+					else if (Program.is_loaded() && !Program.has_errors())	// program o.k. => start 
+						Program.startProgram(Parameter.getAutoOn(),true);	
+				}
 				state=state_up;
+				SerialIF.pauseAutoSend(false);
 			}
 			break;
 		case state_up:
 			if (Controller.is_bus_power_change())
-			{	// bus_power_cahnge
+			{	// bus_power_change
 				/* 
 				 * bus voltage change has been detected:
 				 * hystereses: < 1 V ok -> fail
@@ -156,10 +186,12 @@ void UI_c::process(void)
 				 */
 				Menu.forceUpdate();
 				Terminal.begin();
-				SerialIF.begin();
+				SerialIF.pauseAutoSend(true);
 				Controller.enable_output(false);
 				state=state_wait_for_controller;
 			}	// bus_power_cahnge
+			if (sd_detect.inserted()) NVIC_SystemReset();
+			
 			break;
 		default:
 			state=state_wait_for_parameter;

@@ -335,6 +335,7 @@ void lcd::process(void)
 		case HD44780_do_update_DisplayControl:			// update display control register
 			if (!isBusy())
 			{	// no bus operation pending
+
 				PRINTLN(F("lcd::HD44780_do_update_DisplayControl"));
 				if (LcdBuffer.Status.DisplayFlags.DisplayFlag)
 				{	// Display Flag set, send DisplayControl CMD
@@ -423,6 +424,14 @@ void lcd::process(void)
 			if (!ProcessState.waitState.bWaiting)
 			{	// not Waiting
 				PRINTLN(F("lcd::HD44780_do_end"));
+
+				/* ************************************************************
+				 * to prevent flicker, update progress bar only 
+				 * when CGRAM und DDRAM are clean
+				 * this is the case when all flags have been checked
+				 */
+				updateProgressBar();
+
 				ProcessState.LcdControlState=HD44780_do_check_DDRAM_Buffer;
 			}	// not Waiting
 			break;
@@ -630,6 +639,7 @@ void lcd::DefineChar(uint8_t char_pos, const uint8_t * char_data)
 		putBuffer(	LcdBuffer.CGRAM,
 					LcdBuffer.CGRAM_Flags,
 					char_data[n],
+//					*char_data++,
 					char_pos+n);
 	}
 }	// DefineChar(char *)
@@ -755,6 +765,7 @@ void lcd::ProgressBarInit(	uint8_t x, uint8_t y, 	// Position of progress bar
 		if (length+x>ProcessState.Columns) length=ProcessState.Columns-x;
 		ProgressBar.length=length;
 		ProgressBar.progress=0;
+		ProgressBar.last=progress+1;
 		DefineChar_P(0,BarIcons[4]);	// all dots set
 		ProgressSet(progress);
 	}	// Init Progress Bar
@@ -762,29 +773,13 @@ void lcd::ProgressBarInit(	uint8_t x, uint8_t y, 	// Position of progress bar
 	{	// Disable Progress bar
 		ProgressSet(0);
 		ProgressBar.length=0;
+		ProgressBar.last=0;
 	}	// Disable Progress bar	
 }	// ProgressBarInit
 
 void lcd::ProgressSet(uint8_t progress)				// draw new Bar, 0-100
 {
-	uint8_t nCnt;
-	uint16_t Dots;
 	if (progress>100) progress=100;
-	Dots=ProgressBar.length*5;
-	Dots*=progress;
-	Dots/=100;
-	progress=(uint8_t)Dots;
-	for (nCnt=0;nCnt<progress/5;nCnt++)
-		putChar(ProgressBar.x+nCnt,ProgressBar.y,'\x00');
-	if (progress%5)
-	{
-		if ((ProgressBar.progress%5)!=(progress%5))
-			DefineChar_P(1, BarIcons[progress%5-1]);
-		putChar(ProgressBar.x+progress/5,ProgressBar.y,'\x01');
-		nCnt++;
-	}
-	for (;nCnt<ProgressBar.length;nCnt++)
-		putChar(ProgressBar.x+nCnt,ProgressBar.y,'\x20');
 	ProgressBar.progress=progress;
 }
 
@@ -902,6 +897,34 @@ void lcd::clearFlag(uint8_t * pFlags, uint8_t Pos)
 	pFlags[BytePos]&=~BitMask;
 }	// clearFlag
 
+void lcd::updateProgressBar(void)
+{	// check modified Flag and update data
+	if (ProgressBar.last!=ProgressBar.progress)
+	{	// apply changes
+		uint8_t nCnt;
+		uint16_t Dots;
+		uint8_t progress;
+		
+		progress=ProgressBar.progress;
+		Dots=ProgressBar.length*5;
+		Dots*=progress;
+		Dots/=100;
+		progress=(uint8_t)Dots;
+		for (nCnt=0;nCnt<progress/5;nCnt++)
+			putChar(ProgressBar.x+nCnt,ProgressBar.y,'\x00');
+		if (progress%5)
+		{
+			if ((progress%5)!=(ProgressBar.last%5))
+				DefineChar_P(1, BarIcons[progress%5-1]);
+			putChar(ProgressBar.x+progress/5,ProgressBar.y,'\x01');
+			nCnt++;
+		}
+		for (;nCnt<ProgressBar.length;nCnt++)
+			putChar(ProgressBar.x+nCnt,ProgressBar.y,'\x20');
+
+		ProgressBar.last=ProgressBar.progress;
+	}	// apply changes
+}	// check modified Flag and update data
 
 #undef PRITNLN
 #undef PRITN

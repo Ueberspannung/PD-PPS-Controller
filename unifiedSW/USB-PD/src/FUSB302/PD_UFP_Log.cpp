@@ -20,6 +20,10 @@
 #include <stdint.h>
 #include <string.h>
 
+
+#pragma GCC diagnostic ignored "-Wformat-truncation="
+#pragma GCC diagnostic ignored "-Wreorder"
+
 #include "PD_UFP.h"
 
 /**
@@ -106,11 +110,13 @@ void PD_UFP_Log_c::status_log_event(uint8_t status, uint32_t * obj)
 
 // Optimize RAM usage on AVR MCU by allocate format string in program memory
 #if defined(__AVR__)
-#include <avr/pgmspace.h>
-#define SNPRINTF snprintf_P
+	#include <avr/pgmspace.h>
+	#define SNPRINTF snprintf_P
 #else
-#define SNPRINTF snprintf
-#define PSTR(str) str
+	#define SNPRINTF snprintf
+	#ifndef PSTR
+		#define PSTR(str) str
+	#endif
 #endif
 
 #define LOG(format, ...) do { n = SNPRINTF(buffer, maxlen, PSTR(format), ## __VA_ARGS__); } while (0)
@@ -256,3 +262,5 @@ void PD_UFP_Log_c::print_status(HardwareSerial & serial)
     }
 }
 
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop

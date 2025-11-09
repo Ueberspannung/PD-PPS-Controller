@@ -10,13 +10,20 @@
   - [PuTTY - PPS, CV CC overload](##PuTTY-PPS-mode-overload)
   - [PuTTY - PPS, no load](#PuTTY-PPS)
   - [PuTTY - FIX, no load](#PuTTY-FIX)
+  - [PuTTY - PPS, no load V5.4, no card](#PuTTY-PPS-V5.4-no-card)
+  - [PuTTY - PPS, no load V5.4, sd card](#PuTTY-PPS-sd-card)
+  - [PuTTY - PPS, logging on](#PuTTY-PPS-logging)
+  - [PuTTY - PPS, program selected](#PuTTY-PPS-program-selected)
+  - [PuTTY - PPS, program runnign](#PuTTY-PPS-program-running)
   - [Kermit](#kermit)
 - [Description](#description)
   - [output menu](#output-menu)
   - [regulator mode](#regulator-mode)
-  - [autostart settings](#autostart settings)
+  - [autostart settings](#Autostart-settings)
   - [profile](#profile)
   - [calibration](#calibration)
+  - [logging control](#logging)
+  - [program selection](#program)
 
 ## PC Control
 the new unified firmware supports PC control on all ARM versions.  
@@ -39,19 +46,30 @@ Terminal size is 80 x characters by 24 lines.
 The PC UI has succesfully been tested with [PuTTY](https://putty.org/) or [Kermit](https://www.kermitproject.org/). 
 [TeraTerm](https://github.com/TeraTermProject) might work but there are some issues. Kermit and PuTTY work just fine.
 
-## screenshots
+## screenshots  
 ### PuTTY PPS mode no load
 ![PPS - no load](../img/Terminal01.png)
 ### PuTTY PPS mode load
 ![PPS - load](../img/Terminal02.png)
 ### PuTTY PPS mode overload
 ![PPS - overload](../img/Terminal03.png)
-### PuTTY PPS 
+### PuTTY PPS
 ![PPS - unregulated](../img/Terminal04.png)
-### PuTTY FIX 
+### PuTTY FIX
 ![FIX - load](../img/Terminal05.png)
+### PuTTY PPS V5.4 no card
+![PPS - V5.4 - no card](../img/Terminal11.png)
+### PuTTY PPS sd card 
+![PuTTY PPS V5.4 sd card](../img/Terminal07.png)
+### PuTTY PPS logging
+![PPS - logging](../img/Terminal08.png)
+### PuTTY PPS program selected
+![PPS - PROGRAM](../img/Terminal09.png)
+### PuTTY PPS program running
+![PPS - running](../img/Terminal10.png)
 ### Kermit
 ![PPS - no load](../img/Terminal06.png)
+
 
 # description
 ## meter display
@@ -90,7 +108,7 @@ possible selections are
    
 The iteration cycle depends on th PD source. My is approx 40 ms.
 
-## Autostrat settings
+## Autostart settings
 this settings can be used to define the behaviour on power up. 
  - It can be eithe disabled (OFF)
  - set to restore the last power settings while keeping the output off (SET)
@@ -108,5 +126,21 @@ depending on the quality of the shunt resistor an addition calibration is possib
  1. press enter 
  1. done
  
- 
+## Logging
+this menu can only be use with an sd card inserted otherwise it will show "no card"
+the logging menu allows the user to set up an automatic documentation of the work
+as soon a logging interval is selected, the system starts to write the system data to the sd-card.  
+details can be found here [logging](./DOC/log.md)  
+
+## Program
+
+this menu can only be use with an sd card inserted and program files (*.prg) present.  
+If no SD Card is inserted the menu will show "NO CARD". If there is an SD Card with no programfiles it will show "NO FILES".  
+When there are program files available one can select the desired file. when acknowledged with <CR> key, the program will be parsed.
+This could take a few seconds during which the filname will flash. When finished, the filname will be either green or red. 
+If red errors have been detected.   
+See [script control](./DOC/script.md) for details  
+
+when a program has succesfully been parsed it can be started using the <O> key to swith on the output. The output will be controlled by the script.
+Instead of "(On)"  "(O) Running" will be displayed.
 [home](..readme.md)

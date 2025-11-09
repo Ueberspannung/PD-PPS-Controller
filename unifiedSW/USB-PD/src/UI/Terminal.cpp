@@ -1,22 +1,23 @@
 #include "Terminal.h"
 #include "../ASCII/ASCII_ctrl.h"
 #include "../ASCII/ASCII_box.h"
-#include "../../Version.h"
+#include "../tool/Version.h"
 #include "../tool/convert.h"
 #include "ctype.h"
 
 #include "../../config.h"
 const char Terminal_c::VoltageDisplayUnit[]=" V";
 const char Terminal_c::CurrentDisplayUnit[]=" A";
+const char Terminal_c::TemperatureDisplayUnit[]=" " "\xF8" "C";
 
 const char Terminal_c::OutputMenuData[]=	"Output Menu\0"
 											"  0.00 (V) \0"
 											"  0.00 (A) \0"
-											"   xxxxx   \0"
-											"In  0.000 V\0\0";
+											"   xxxxx   \0\0";
 
 const char Terminal_c::OutputOff[]= 		"   (O)ff   ";
 const char Terminal_c::OutputOn[]= 			"   (O)n    ";
+const char Terminal_c::OutputRun[]= 		"(O) Running";
 
 const char Terminal_c::RegulatorMenuData[]=	"(R)egulator\0"
 											" OFF       \0"
@@ -33,11 +34,11 @@ const char Terminal_c::ProfileMenuDataS[]=	"(P)rofile               \0\0"
 											"                        \0"
 											"                        \0";
 
-										//	"123456789012345678901234"
-const char Terminal_c::AutoStartMenuData[]=	"     Auto (S)tartup     \0"
+										//	"12345678901234567890123456"
+const char Terminal_c::AutoStartMenuData[]=	"     Auto (S)tartup       \0"
 											"  Off  \0"
 											"  Set  \0"
-											"  On  \0\0";
+											"  On   \0\0";
 
 										//	"12345678901234567890123456"
 const char Terminal_c::CalibrationMenuData[]=
@@ -48,32 +49,52 @@ const char Terminal_c::CalibrationMenuData[]=
 const char Terminal_c::EraseDataMenuData[]= " (E)rase EEPROM Data: N   ";
 
 										//	"123456789012345678901234"
-const char Terminal_c::TitleData[]=			" PD - PPS \0"
-											"Controller\0\0";
+const char Terminal_c::TitleData[]=			"PD / PPS Controller\0\0";
 
 										//	"123456789012345678901234"
-const char Terminal_c::VersionData[]=		"Version   \0\0";
-const char Terminal_c::BuiltData[]=			"Built     \0\0";
+const char Terminal_c::LoggingMenuData[]=	" (L)ogging \0"
+											"   off     \0"
+											"  NO CARD  \0\0";
+const char Terminal_c::LoggingNoCard[]=		" NO CARD  ";
 
+const char Terminal_c::ProgSelMenuData[]=	" Pro(g)ram \0"
+											"   off     \0\0";
+const char Terminal_c::ProgSelNoFiles[]=    "no files";												
+const char Terminal_c::ProgSelNoCard[]=    	"NO CARD ";												
+const char Terminal_c::ProgSelOff[]=    	"--off --";												
+const char Terminal_c::ProgSelClr[]=    	"        ";												
+
+
+										//	"123456789012345678901234"
+//const char Terminal_c::VersionData[]=		"Version   \0\0";
+//const char Terminal_c::BuiltData[]=			"Built     \0\0";
+
+										//  "         1         2         3         4         5         6         7         8"
 										//	"12345678901234567890123456789012345678901234567890123456789012345678901234567890"
-const char Terminal_c::WaitMenu[]=			"Keys: (A) (C) (E) (O) (P) (R) (S) (V)";
-const char Terminal_c::VerticalMenu[]=  	"Keys: (CRSR_UP) (CRSR_DOWN) (ESC) (ENTER)";
-const char Terminal_c::HorizontalMenu[]=	"Keys: (CRSR_LEFT) (CRSR_RIGHT)   (ESC)   (ENTER)";
-const char Terminal_c::EditMenu[]=			"Keys: (CRSR_LEFT) (CRSR_RIGHT)  (BS) (DEL)  (ESC) (Enter)  (0) - (9) (.) (SPACE)";
-const char Terminal_c::YesNoMenu[]=			"Keys: (DEL)  (ESC) (Enter)  (N) (n) (Y) (y)";
+const char Terminal_c::WaitMenu[]=			"Keys: (A) (C) (E) (G) (L) (O) (P) (R) (S) (V)";
+const char Terminal_c::VerticalMenu[]=  	"Keys: CUU CUD ESC ENT";
+const char Terminal_c::HorizontalMenu[]=	"Keys: CUL CUR ESC ENT";
+const char Terminal_c::EditMenu[]=			"Keys: CUL CUR BS  DEL ESC ENT (0) - (9) (.) ( )";
+const char Terminal_c::YesNoMenu[]=			"Keys: DEL ESC ENT  (N) (n) (Y) (y)";
 
 const char Terminal_c::NumEditChars[]=		" .0123456789";
 const char Terminal_c::YesNoChars[]=		"NnYy";
-const char Terminal_c::MainMenuChars[]=		"AaCcEeOoPpRrSsVv";
+const char Terminal_c::MainMenuChars[]=		"AaCcEeGgLlOoPpRrSsVv";
 
 
 
 
-void Terminal_c::init(VT100_c *term, controller_c * Controller, parameter * Parameter)
+void Terminal_c::init(	VT100_c *term, 
+						controller_c * Controller, 
+						parameter * Parameter, 
+						log_c * Log,
+						program_c * Program)
 {
 	pTerminal	=term;
 	pController	=Controller;
 	pParameter	=Parameter;
+	pLog		=Log;
+	pProgram	=Program;
 }
 
 
@@ -89,6 +110,12 @@ void Terminal_c::begin(void)
     bAutoOn=false;
     ProfileSelection=1;
     RegulatorSelection=1;
+    hasSD=false;
+    prgBusy=false;
+    prgRunning=false;
+	program_message_type=program_c::CLEAR_MSG;
+	program_message_id=0;
+	ProgFileNum=0;
 }
 
 
@@ -173,6 +200,14 @@ bool Terminal_c::process(void)
                 EndListMenu(MenuMode,MenuItem);
 
 			break;
+		case SCROLL:
+			if (ProcessScrollMenu())
+				EndScrollMenu(MenuMode,MenuItem);
+			break;
+		case DIR:
+			if (ProcessDirMenu())
+				EndDirMenu(MenuMode,MenuItem);
+			break;
 		default:
 			MenuMode=START;
 			break;
@@ -197,16 +232,7 @@ void Terminal_c::ShowMenu(void)
 	pTerminal->SetColours(default_text_colour,	default_background_colour);
 	pTerminal->ClearScreen();
 
-	DrawBox(VoltageDisplayXpos,
-			VoltageDisplayYpos,
-			VoltageDisplayXsize,
-			VoltageDisplayYsize,
-			VoltageDisplayDouble);
-	DrawBox(CurrentDisplayXpos,
-			CurrentDisplayYpos,
-			CurrentDisplayXsize,
-			CurrentDisplayYsize,
-			CurrentDisplayDouble);
+	DrawHeaderBox();
 
 	DrawVerticalFrame(	OutputMenuXpos,
                         OutputMenuYpos,
@@ -214,11 +240,24 @@ void Terminal_c::ShowMenu(void)
                         OutputMenuItems,
                         OutputMenuLast);
 
+	DrawVerticalFrame(	LoggingMenuXpos,
+                        LoggingMenuYpos,
+                        LoggingMenuSize,
+                        LoggingMenuItems,
+                        LoggingMenuLast);
+
 	DrawVerticalFrame(	RegulatorMenuXpos,
                         RegulatorMenuYpos,
                         RegulatorMenuSize,
                         RegulatorMenuItems,
                         RegulatorMenuLast);
+
+	DrawVerticalFrame(	ProgSelMenuXpos,
+                        ProgSelMenuYpos,
+                        ProgSelMenuSize,
+                        ProgSelMenuItems,
+                        ProgSelMenuLast);
+
 
 	DrawVerticalFrame(	ProfileMenuXpos,
                         ProfileMenuYpos,
@@ -250,7 +289,14 @@ void Terminal_c::ShowMenu(void)
                         OutputMenuYpos,
                         OutputMenuData);
 
+	DrawVerticalText(	LoggingMenuXpos,
+						LoggingMenuYpos,
+						LoggingMenuData);
 
+	DrawVerticalText(	ProgSelMenuXpos,
+						ProgSelMenuYpos,
+						ProgSelMenuData);
+						
 	DrawVerticalText(	ProfileMenuXpos,
                         ProfileMenuYpos,
                         ProfileMenuData,
@@ -389,15 +435,61 @@ void Terminal_c::DrawLowerLine(uint8_t Length)
 	pTerminal->write(BOX_BRD);
 }
 
+
+void Terminal_c::DrawHeaderBox(void)
+{	// DrawHeaderBox
+	DrawBox(VoltageDisplayXpos,
+			VoltageDisplayYpos,
+			VoltageDisplayXsize,
+			VoltageDisplayYsize,
+			VoltageDisplayDouble);
+	DrawBox(CurrentDisplayXpos,
+			CurrentDisplayYpos,
+			CurrentDisplayXsize,
+			CurrentDisplayYsize,
+			CurrentDisplayDouble);
+	DrawBox(UBusDisplayXpos,
+			UBusDisplayYpos,
+			UBusDisplayXsize,
+			UBusDisplayYsize,
+			UBusDisplayDouble);
+	DrawBox(TemperatureDisplayXpos,
+			TemperatureDisplayYpos,
+			TemperatureDisplayXsize,
+			TemperatureDisplayYsize,
+			TemperatureDisplayDouble);
+	
+	pTerminal->PutCharAt(CurrentDisplayXpos,CurrentDisplayYpos  ,BOX_HTD);		
+	pTerminal->PutCharAt(CurrentDisplayXpos,CurrentDisplayYpos+1,BOX_HTD);		
+	pTerminal->PutCharAt(CurrentDisplayXpos,CurrentDisplayYpos+4,BOX_HBD);		
+	pTerminal->PutCharAt(CurrentDisplayXpos,CurrentDisplayYpos+5,BOX_HBD);		
+	pTerminal->PutCharAt(UBusDisplayXpos,UBusDisplayYpos  ,BOX_HTD);		
+	pTerminal->PutCharAt(UBusDisplayXpos,UBusDisplayYpos+1,BOX_HTD);		
+	pTerminal->PutCharAt(UBusDisplayXpos,UBusDisplayYpos+4,BOX_HBD);		
+	pTerminal->PutCharAt(UBusDisplayXpos,UBusDisplayYpos+5,BOX_HBD);		
+	pTerminal->PutCharAt(TemperatureDisplayXpos,TemperatureDisplayYpos  ,BOX_HTD);		
+	pTerminal->PutCharAt(TemperatureDisplayXpos,TemperatureDisplayYpos+1,BOX_HTD);		
+	pTerminal->PutCharAt(TemperatureDisplayXpos,TemperatureDisplayYpos+4,BOX_HBD);		
+	pTerminal->PutCharAt(TemperatureDisplayXpos,TemperatureDisplayYpos+5,BOX_HBD);		
+	
+}	// DrawHeaderBox
+
+
 void Terminal_c::SetTextAttribute(	bool Selected,
-									bool Highlighted)
+									bool Highlighted,
+									bool Alert)
 {
+	
 	pTerminal->SetAttributes(VT100_c::reset|VT100_c::dim);
 	pTerminal->SetColours(default_text_colour,	default_background_colour);
-	if (Selected)
-		pTerminal->SetAttributes(VT100_c::bright);
-	if (Highlighted)
-		pTerminal->SetAttributes(VT100_c::reverse);
+	if (Selected || Highlighted || Alert)
+	{	// additional options
+		uint8_t option=0;
+		if (Selected) option|=VT100_c::bright;
+		if (Highlighted) option|=VT100_c::reverse;
+		if (Alert) option|=VT100_c::blink;
+		pTerminal->SetAttributes(option);
+	} 	// additional options
 }
 
 
@@ -506,6 +598,48 @@ void Terminal_c::DrawHorizontalText(uint8_t Xpos, uint8_t Ypos,	// Position of L
 
 }
 
+void Terminal_c::DrawDirText(	uint8_t Xpos, uint8_t Ypos,	// Position of decision Menu
+								dir_c *pDir,
+								uint8_t Selection, 			// Width of deceision Menu
+								bool Selected,	 			// number of higlghtes item 0=none
+								bool blink,					// attribut blink
+								VT100_c::colour_et colour) 	// display colour
+
+{	//	DrawText
+	const char * Data;
+		
+	if (pDir->hasSD())
+	{	// card present
+		if (pDir->get_file_cnt()>0)
+		{	// program files exist
+			if (Selection==0)
+				Data=ProgSelOff;
+			else
+			{
+				Data=pDir->get_file_name(Selection);
+				if (Data) Data=pDir->get_name();
+			}
+		}	// program files exist
+		else
+			Data=ProgSelNoFiles;
+	}	// card present
+	else
+		Data=ProgSelNoCard;
+
+
+	Xpos+=2;
+	Ypos+=3;
+
+	pTerminal->SaveRestoreCursorAttributes(true);
+	SetTextAttribute(Selected,false,blink);
+	
+	pTerminal->SetColours(colour,	default_background_colour);
+
+	pTerminal->PrintAt(Xpos,Ypos,ProgSelClr);
+	pTerminal->PrintAt(Xpos,Ypos,Data);
+	pTerminal->SaveRestoreCursorAttributes(false);
+}	//	DrawText
+
 void Terminal_c::DrawBoxText(	uint8_t Xpos, uint8_t Ypos,
 								const char* Data,
 								bool doubleSize,
@@ -519,17 +653,32 @@ void Terminal_c::DrawBoxText(	uint8_t Xpos, uint8_t Ypos,
 		pTerminal->PrintAt(Xpos,Ypos++,Data);
 		if (doubleSize)
 			pTerminal->PrintAt(Xpos,Ypos++,Data);
-		Data=NextMenuItem(Data);
+		if (Ysize) Data=NextMenuItem(Data);
 	}
 }	// DrawBoxText
 
 
 void Terminal_c::DrawStatusLineText(const char *Data)
 {	// DrawStatusLineText
+	pTerminal->SetCursor(StatusXposEnd,StatusYpos);
+	pTerminal->ClearSOL();
 	pTerminal->SetCursor(StatusXpos,StatusYpos);
-	pTerminal->ClearLine();
 	pTerminal->print(Data);
 }	// DrawStatusLineText
+
+void Terminal_c::DrawScrollText(uint8_t Xpos, uint8_t Ypos,	// of text field
+								const char * Data, 			// pointer to decision Menu Data
+								uint8_t Selected, 			// number of item to display
+								bool Highlighted)		    // display inverted or not
+{	// DrawScrollText
+	while (Selected--)
+		Data=NextMenuItem(Data);
+
+	pTerminal->SaveRestoreCursorAttributes(true);
+	if (Highlighted) SetTextAttribute(false,true);
+	pTerminal->PrintAt(Xpos,Ypos,Data);
+	pTerminal->SaveRestoreCursorAttributes(false);
+}	// DrawScrollText
 
 
 uint8_t Terminal_c::CountMenuData(const char * Data)
@@ -551,6 +700,13 @@ const char * Terminal_c::NextMenuItem(const char * Data)
 
 void Terminal_c::printTitle(void)
 {	// printTitle
+
+	pTerminal->SaveRestoreCursorAttributes(true);
+	SetTextAttribute(true,false);
+	pTerminal->PrintAt(TitleXpos,TitleYpos,TitleData);
+	pTerminal->SaveRestoreCursorAttributes(false);
+
+	/*
 	pTerminal->SetCursor(1,1); pTerminal->SetCharSize(VT100_c::double_hight_upper_line);
 	pTerminal->SetCursor(1,2); pTerminal->SetCharSize(VT100_c::double_hight_lower_line);
 	pTerminal->SetCursor(1,3); pTerminal->SetCharSize(VT100_c::double_hight_upper_line);
@@ -561,11 +717,20 @@ void Terminal_c::printTitle(void)
 	pTerminal->PrintAt(TitleXpos,TitleYpos+2,NextMenuItem(TitleData));
 	pTerminal->PrintAt(TitleXpos,TitleYpos+3,NextMenuItem(TitleData));
 
-
+	n=0; while(*version++) n++;
+	pTerminal->PrintAt(TitleXpos+4-n/2,TitleYpos+4,Version_c().pgmGetVersion());
+	pTerminal->PrintAt(TitleXpos+4-n/2,TitleYpos+5,Version_c().pgmGetVersion());
+	*/
 }	// printTitle
 
 void Terminal_c::printVersion(void)
 {	// printVersion
+	pTerminal->SaveRestoreCursorAttributes(true);
+	SetTextAttribute(true,false);
+	pTerminal->PrintAt(VersionXpos,VersionYpos,Version_c().pgmGetVersion());
+	pTerminal->SaveRestoreCursorAttributes(false);
+	
+	/*
 	DrawVerticalFrame(	VersionXpos,
 						VersionYpos,
 						VersionSize,
@@ -580,11 +745,13 @@ void Terminal_c::printVersion(void)
 	DrawVerticalText(	BuiltXpos,BuiltYpos,BuiltData);
 	DrawVerticalText(	VersionXpos,VersionYpos,1,Version_c().pgmGetVersion());
 	DrawVerticalText(	BuiltXpos,BuiltYpos,1,Version_c().pgmGetBuiltDate());
+	*/
 }	// printVersion
 
 
 void Terminal_c::updateData(void)
 {	// updateData
+	updateProgMsg();
 	if (forceUpdate)
 	{	// unconditional of settings
 		uint16_t Cal,Ref;
@@ -594,6 +761,12 @@ void Terminal_c::updateData(void)
 		updateSetCurrent(	pController->get_set_current());
 		updateAutoStart(	pParameter->getAutoSet(),
 							pParameter->getAutoOn());
+		updateLogging(		pParameter->getLogInterval(),
+							pLog->getLogFileNumber(),
+							pLog->hasSD());
+					
+		updateProgSel(		pProgram->getProgramFileNumber());
+		
 	}	// unconditional of settings
 
 	if (forceUpdate || ((uint16_t)(TimeStamp-lastUpdate)>UPDATE_CYCLE))
@@ -607,27 +780,43 @@ void Terminal_c::updateData(void)
 								(pController->get_operating_mode()!=controller_c::CONTROLLER_MODE_OFF) &&
 								pController->is_PPS());
 		updateInVoltage( 		pController->get_Vbus_mV());
-		updateOutputSwitch(		pController->is_output_enabled());
+		updateOutputSwitch(		pController->is_output_enabled() || pProgram->is_running());
 		updateRegulator(		pController->get_operating_mode());
 
+		if (pProgram->is_running())
+		{	// update set values
+			updateSetVoltage(	pController->get_set_voltage());
+			updateSetCurrent(	pController->get_set_current());
+		}	// update set values
+		
+		if (pController->has_temperature())
+			updateTemperature(	pController->get_temperature_dC());
+
+		pTerminal->SetCursor(DebugProfileXpos,DebugYpos);
 		if (pController->is_PPS())
-			pTerminal->PrintAt(53,20,"PPS");
+			pTerminal->write("PPS");
 		else if (pController->is_PD())
-			pTerminal->PrintAt(53,20,"FIX");
+			pTerminal->write("FIX");
 		else
-			pTerminal->PrintAt(53,20,"N/A");
+			pTerminal->write("N/A");
 
+		pTerminal->SetCursor(DebugTransitionXpos,DebugYpos);
 		if (pController->is_ps_transition())
-			pTerminal->PrintAt(57,20,"in trans  ");
+			pTerminal->write("in trans  ");
 		else
-			pTerminal->PrintAt(57,20,"trans done");
+			pTerminal->write("trans done");
 
+		pTerminal->SetCursor(DebugReadyXpos,DebugYpos);
 		if (pController->is_power_ready())
-			pTerminal->PrintAt(68,20,"ready");
+			pTerminal->write("ready");
 		else
-			pTerminal->PrintAt(68,20,"busy ");
+			pTerminal->write("busy ");
+
+		forceUpdate=false;
+		forceUpdate=hasSD!=pLog->hasSD();
+		forceUpdate|=prgBusy!=pProgram->isBusy();
+		forceUpdate|=prgRunning!=pProgram->is_running();
 	}	// update of readings
-	forceUpdate=false;
 }	// updateData
 
 void Terminal_c::updateOutputReadings(	uint16_t Voltage_mV,
@@ -703,11 +892,24 @@ void Terminal_c::updateInVoltage(uint16_t Voltage_mV)
 	{	// Update
 		VbusVoltage=Voltage_mV;
 		VbusCycleCnt=0;
+		/*
 		pTerminal->PrintAt(	InputVoltageXpos,InputVoltageYpos,
 							convert_c(	VbusVoltage,
 										millisDecimals).getStringUnsigned(	buffer,
 																			InputVoltageSize,
 																			InputVoltageDecimals));
+		*/
+		DrawBoxText(UBusDisplayXpos,
+					UBusDisplayYpos,
+					convert_c(	VbusVoltage,
+								millisDecimals).getStringUnsigned(	buffer,
+																	UBusDisplaySize,
+																	UBusDisplayDecimals,
+																	VoltageDisplayUnit),
+					UBusDisplayDouble,
+					UBusDisplayYsize);
+		
+		 
 	}	// Update
 	else if ((VbusVoltage+Vbus_limit_min<Voltage_mV) ||
 			 (VbusVoltage>Vbus_limit_min+Voltage_mV) )
@@ -718,9 +920,18 @@ void Terminal_c::updateInVoltage(uint16_t Voltage_mV)
 
 void Terminal_c::updateOutputSwitch(bool bOn)
 {	//	updateOutputSwitch
-	pTerminal->PrintAt(	OutputStateXpos,
-						OutputStateYpos,
-						(bOn)?(OutputOn):(OutputOff));
+	if (!bOn)
+		pTerminal->PrintAt(	OutputStateXpos,
+							OutputStateYpos,
+							OutputOff);
+	else if (!pProgram->is_running())
+		pTerminal->PrintAt(	OutputStateXpos,
+							OutputStateYpos,
+							OutputOn);
+	else
+		pTerminal->PrintAt(	OutputStateXpos,
+							OutputStateYpos,
+							OutputRun);
 }	// updateOutputSwitch
 
 void Terminal_c::updateCalibration(uint16_t Internal_mA, uint16_t Reference_mA)
@@ -763,6 +974,122 @@ void Terminal_c::updatePower(uint8_t profile)
                         profile+1,0,
                         ProfileMenuLast);
 }	// updatePower
+
+void Terminal_c::updateTemperature(int16_t temp_dC)
+{	// updateTemperature
+	
+	DrawBoxText(TemperatureDisplayXpos,
+				TemperatureDisplayYpos,
+				convert_c(	temp_dC,
+							decisDecimals).getStringUnsigned(	buffer,
+																TemperatureDisplaySize,
+																TemperatureDisplayDecimals,
+																TemperatureDisplayUnit),
+				TemperatureDisplayDouble,
+				TemperatureDisplayYsize);
+				
+	
+	/*
+	pTerminal->PrintAt(	TemperatureXpos,TemperatureYpos,
+					convert_c(	temp_dC,
+								decisDecimals).getStringSigned(	buffer,
+																TemperatureSize,
+																TemperatureDecimals));
+	*/
+}	// updateTemperature
+
+
+void Terminal_c::updateLogging(log_c::logInterval_et interval, uint32_t logFileNum, bool hasSD)
+{
+	pTerminal->PrintAt(	LogIntervalXpos,LogIntervalYpos,
+						pLog->getLogIntervalText(interval));
+	if (hasSD)
+	{	// print file number
+		pTerminal->PrintAt(	LogFileNumXpos,LogFileNumYpos,
+							convert_c(logFileNum,0).getStringUnsignedZeros(buffer,8,0));
+	}	// print file number
+	else
+	{	// no card
+		pTerminal->PrintAt(	LogFileNumXpos,LogFileNumYpos,
+							LoggingNoCard);
+	}	// no card
+	this->hasSD=hasSD;
+}
+
+void Terminal_c::updateProgSel(uint16_t FileNum)
+{	// updateProgSel
+	bool bBlink;
+	VT100_c::colour_et colour;
+	
+	bBlink=pProgram->is_running() || pProgram->isBusy();
+	if (pProgram->has_errors())
+		colour=prg_err_colour;
+	else if (pProgram->is_loaded())
+		colour=prg_ok_colour;
+	else 
+		colour=default_text_colour;
+
+	DrawDirText(ProgSelMenuXpos,			// position
+				ProgSelMenuYpos,
+				pProgram,					// pointer to dir class
+				FileNum,					// number of entry
+				pProgram->is_running(),		// highlight when running
+				bBlink,						// blink when desired
+				colour);					// desired colour 
+
+	prgBusy=pProgram->isBusy();
+	prgRunning=pProgram->is_running();
+}	// updateProgSel
+
+void Terminal_c::updateProgMsg(void)
+{	// updateProgMsg
+	uint8_t id;
+	program_c::message_type_et typ;
+	
+	pProgram->getMessageState(typ,id);
+	
+	if ((program_message_id!=id) || 
+		(program_message_type!=typ))
+	{	// update message
+		program_message_id=id;
+		program_message_type=typ;
+		
+		pTerminal->SaveRestoreCursorAttributes(true);
+		switch (program_message_type)
+		{	// switch program_message_type
+			case program_c::DISP_MSG:
+				pTerminal->SetAttributes(VT100_c::reset|VT100_c::dim);
+				pTerminal->SetColours(default_text_colour,default_background_colour);
+				break;
+			case program_c::INFO_MSG:
+				pTerminal->SetAttributes(VT100_c::reset|VT100_c::bright);
+				pTerminal->SetColours(default_text_colour,default_background_colour);
+				break;
+			case program_c::PASS_MSG:
+				pTerminal->SetAttributes(VT100_c::reset|VT100_c::bright);
+				pTerminal->SetColours(prg_ok_colour,default_background_colour);
+				break;
+			case program_c::FAIL_MSG:
+				pTerminal->SetAttributes(VT100_c::reset|VT100_c::bright|VT100_c::blink);
+				pTerminal->SetColours(prg_err_colour,default_background_colour);
+				break;
+			case program_c::CLEAR_MSG:
+				/* fall through */
+			default:
+				pTerminal->SetCursor(ProgMsgXpos+ProgMsgLen,ProgMsgYpos);
+				pTerminal->ClearSOL();
+				break;
+		}	// switch program_message_type
+		
+		if (program_message_type!=program_c::CLEAR_MSG)
+			pTerminal->PrintAt(ProgMsgXpos,ProgMsgYpos,pProgram->getMessage(program_message_id));
+			
+		pTerminal->SaveRestoreCursorAttributes(false);
+	}	// update message
+	
+}	// updateProgMsg
+
+
 
 void Terminal_c::createPower(void)
 {	// createPower
@@ -959,12 +1286,18 @@ void Terminal_c::EndListMenu(menuMode_et &mode,	menuItem_et &item)
 				// update Regulator Settings
 				SetRegulator(listMenuData.Selection);
 				break;
+			case LOG:
+				SetLogging(listMenuData.Selection);
+				break;
+			case PROG:
+				SetProgram(listMenuData.Selection);
 			default:
 				break;
 		}   // switch Item
     item=IDLE;
 	DrawStatusLineText(WaitMenu);
 	externalUpdate=true;
+	forceUpdate=true;
 }   // EndListMenu
 
 void Terminal_c::StartEditNum(uint8_t Xpos, uint8_t Ypos, uint16_t val, uint8_t Size, uint8_t Decimals)
@@ -1066,6 +1399,138 @@ void Terminal_c::EndEdit(menuMode_et &mode,	menuItem_et &item)
 	externalUpdate=true;
 }	// EndEdit
 
+void Terminal_c::StartScrollMenu(uint8_t Xpos, uint8_t Ypos, const char * Data, uint8_t Size, uint8_t Selection)
+{	//	StartScrollMenu
+    listMenuData.Xpos=Xpos;
+    listMenuData.Ypos=Ypos;
+    listMenuData.Data=Data;
+    listMenuData.Size=Size;
+    listMenuData.Items=CountMenuData(Data);
+    listMenuData.Selection=Selection;
+    listMenuData.Highlighted=Selection;
+    listMenuData.Horizontal=false;
+    listMenuData.updated=false;
+    DrawScrollText(	listMenuData.Xpos, listMenuData.Ypos,
+					Data,
+					listMenuData.Highlighted,true);
+	DrawStatusLineText(VerticalMenu);
+}	// 	StartScrollMenu
+
+bool Terminal_c::ProcessScrollMenu(void)
+{	//	ProcessScrollMenu
+    char cKey=0;
+    bool bKey;
+    if (listMenuData.Horizontal)
+        bKey=pTerminal->ScanKeyMask(&cKey,"",HorizontalControl);
+    else
+        bKey=pTerminal->ScanKeyMask(&cKey,"",VerticalControl);
+    if (bKey)
+    {
+        switch (cKey)
+        {   // switch key
+            case VT100_c::EDIT_CRSR_UP:
+                /* FALL THROUGH */
+            case VT100_c::EDIT_CRSR_LEFT:
+                if (listMenuData.Highlighted>0)
+                    listMenuData.Highlighted--;
+                break;
+            case VT100_c::EDIT_CRSR_DOWN:
+                /* FALL THROUGH */
+            case VT100_c::EDIT_CRSR_RIGHT:
+                if (listMenuData.Highlighted<listMenuData.Items-1)
+                    listMenuData.Highlighted++;
+                break;
+            case VT100_c::EDIT_ENTER:
+                listMenuData.Selection=listMenuData.Highlighted;
+                /* FALL THROUGH */
+            case VT100_c::EDIT_ESC:
+                listMenuData.updated=cKey==VT100_c::EDIT_ENTER;
+                listMenuData.Highlighted=listMenuData.Selection;
+                break;
+            default:
+                break;
+        }   // switch key
+		DrawScrollText(	listMenuData.Xpos, 
+						listMenuData.Ypos,
+						listMenuData.Data,
+						listMenuData.Highlighted,
+						(cKey!=VT100_c::EDIT_ENTER) && (cKey!=VT100_c::EDIT_ESC));
+    }
+    return bKey && ((cKey==VT100_c::EDIT_ESC) || (cKey==VT100_c::EDIT_ENTER));
+}	//	ProcessScrollMenu
+
+void Terminal_c::EndScrollMenu(menuMode_et &mode,menuItem_et &item)
+{	//	EndScrollMenu
+	EndListMenu(mode,item);
+}	//	EndScrollMenu
+
+void Terminal_c::StartDirMenu(uint8_t Xpos, uint8_t Ypos, dir_c * dir, uint8_t Size, uint8_t Selection)
+{	// StartDirMenu
+    listMenuData.Xpos=Xpos;
+    listMenuData.Ypos=Ypos;
+    listMenuData.Data=NULL;
+	listMenuData.pDir=dir;
+    listMenuData.Size=Size;
+    listMenuData.Items=listMenuData.pDir->get_file_cnt();
+    listMenuData.Selection=Selection;
+    listMenuData.Highlighted=Selection;
+    listMenuData.Horizontal=false;
+    listMenuData.updated=false;
+    DrawDirText(	listMenuData.Xpos, listMenuData.Ypos,
+					listMenuData.pDir,
+					listMenuData.Highlighted,
+					true);
+	DrawStatusLineText(VerticalMenu);
+}	// StartDirMenu
+
+bool Terminal_c::ProcessDirMenu(void)
+{	// ProcessDirMenu
+    char cKey=0;
+    bool bKey;
+    if (listMenuData.Horizontal)
+        bKey=pTerminal->ScanKeyMask(&cKey,"",HorizontalControl);
+    else
+        bKey=pTerminal->ScanKeyMask(&cKey,"",VerticalControl);
+    if (bKey)
+    {
+        switch (cKey)
+        {   // switch key
+            case VT100_c::EDIT_CRSR_UP:
+                /* FALL THROUGH */
+            case VT100_c::EDIT_CRSR_LEFT:
+                if (listMenuData.Highlighted>0)
+                    listMenuData.Highlighted--;
+                break;
+            case VT100_c::EDIT_CRSR_DOWN:
+                /* FALL THROUGH */
+            case VT100_c::EDIT_CRSR_RIGHT:
+                if (listMenuData.Highlighted<listMenuData.Items)
+                    listMenuData.Highlighted++;
+                break;
+            case VT100_c::EDIT_ENTER:
+                listMenuData.Selection=listMenuData.Highlighted;
+                /* FALL THROUGH */
+            case VT100_c::EDIT_ESC:
+                listMenuData.updated=cKey==VT100_c::EDIT_ENTER;
+                listMenuData.Highlighted=listMenuData.Selection;
+                break;
+            default:
+                break;
+        }   // switch key
+       DrawDirText(	listMenuData.Xpos,
+                    listMenuData.Ypos,
+                    listMenuData.pDir,
+                    listMenuData.Highlighted,
+                    (cKey!=VT100_c::EDIT_ENTER) && (cKey!=VT100_c::EDIT_ESC));
+    }
+    return bKey && ((cKey==VT100_c::EDIT_ESC) || (cKey==VT100_c::EDIT_ENTER));
+}	// ProcessDirMenu
+
+void Terminal_c::EndDirMenu(menuMode_et &mode,menuItem_et &item)
+{	// EndDirMenu
+	EndListMenu(mode,item);
+}	// EndDirMenu
+
 
 void Terminal_c::processWaiting(menuMode_et &mode,	menuItem_et &item)
 {
@@ -1088,13 +1553,27 @@ void Terminal_c::processWaiting(menuMode_et &mode,	menuItem_et &item)
 					item=PROFILE;
 				}	// select different profile
                 break;
+            case 'C': // edit calibration value
+				mode=EDIT;
+				item=CALIBRATION;
+                break;
 			case 'E': // Erase EEPROM data
 				mode=EDIT;
 				item=ERASE;
 				break;
-            case 'C': // edit calibration value
-				mode=EDIT;
-				item=CALIBRATION;
+			case 'G': // select program file
+				if (hasSD)
+				{
+					mode=DIR;
+					item=PROG;
+				}
+				break;
+            case 'L': // select logging intervall
+				if (hasSD)
+				{
+					mode=SCROLL;
+					item=LOG;
+				}
                 break;
             case 'O': // Toggel Output
 				mode=WAITING;
@@ -1189,6 +1668,22 @@ void Terminal_c::StartMenu(menuItem_et &item)
         case ERASE:
 			StartEditYesNo(EraseDataEditXpos,EraseDataEditYpos,'N');
 			break;
+		case LOG:
+			LogIntervalSelection=pParameter->getLogInterval();
+			StartScrollMenu(LogIntervalXpos,
+							LogIntervalYpos,
+							pLog->getLogIntervalTextList(),
+							LoggingMenuSize-2,
+							LogIntervalSelection);
+			break;
+		case PROG:
+			ProgFileNum=pProgram->getProgramFileNumber();
+			StartDirMenu(	ProgSelMenuXpos,
+							ProgSelMenuYpos,
+							pProgram,
+							ProgSelMenuSize-2,
+							ProgFileNum);
+			break;
         default:
             break;
 	}
@@ -1196,16 +1691,28 @@ void Terminal_c::StartMenu(menuItem_et &item)
 
 void Terminal_c::SetOutputSwitch(void)
 {	// SetOutputSwitch
-	bOutputSwitch=pController->is_output_enabled();
-	bOutputSwitch=!bOutputSwitch;
-	updateOutputSwitch(bOutputSwitch);
-	pController->enable_output(bOutputSwitch);
+	if (!pProgram->is_loaded() || pProgram->has_errors())
+	{	// no program available, process switch
+		bOutputSwitch=pController->is_output_enabled();
+		bOutputSwitch=!bOutputSwitch;
+		updateOutputSwitch(bOutputSwitch);
+		pController->enable_output(bOutputSwitch);
 
-	if (pParameter->getAutoOn())
-	{	// Auto-> save
-		pParameter->setAutoOn(bOutputSwitch);
-		pParameter->write();
-	}	// Auto-> save
+		if (pParameter->getAutoOn())
+		{	// Auto-> save
+			pParameter->setAutoOn(bOutputSwitch);
+			pParameter->write();
+		}	// Auto-> save
+	}	// no program available, process switch
+	else
+	{	// program available, start / stop program
+		bOutputSwitch=pProgram->is_running();
+		bOutputSwitch=!bOutputSwitch;
+		pProgram->startProgram(bOutputSwitch);
+		bOutputSwitch=pProgram->is_running();
+		updateOutputSwitch(bOutputSwitch);
+		updateProgSel(pProgram->getProgramFileNumber());
+	}	// program available, start / stop program
 }	// SetOutputSwitch
 
 uint16_t Terminal_c::SetOutputVoltage(uint16_t Voltage_mV)
@@ -1332,7 +1839,7 @@ void Terminal_c::SetRegulator(uint8_t Mode)
 
 void Terminal_c::SetAutoStart(uint8_t Mode)
 {	// SetAutoStart
-	if (Mode!=getAutoStartupVal(bAutoOn,bAutoSet))
+	if (Mode!=getAutoStartupVal(bAutoSet,bAutoOn))
 	{	// new value
 		setAutoStartup(Mode,bAutoSet,bAutoOn);
 		pParameter->setAutoOn(bAutoOn);
@@ -1341,6 +1848,51 @@ void Terminal_c::SetAutoStart(uint8_t Mode)
 	}	// new value
 
 }	// SetAutoStart
+
+void Terminal_c::SetLogging(uint8_t Mode)
+{	// SetLogging
+	if (Mode!=LogIntervalSelection)
+	{	// new value
+		pLog->setInterval((log_c::logInterval_et) Mode);
+		pParameter->setLogInteval(pLog->getInterval());
+		pParameter->write();
+		forceUpdate= forceUpdate || (pLog->getInterval()==log_c::LOG_OFF);
+	}	// new value
+}	// SetLogging
+
+void Terminal_c::SetProgram(uint8_t FileNum)
+{	// SetLogging
+	
+	if ((FileNum!=ProgFileNum) ||
+		((*pParameter->getProgramName()!=NUL) && (FileNum==0)) )
+	{	// new value
+		pProgram->setProgramFileNumber(FileNum);
+		
+		if (pParameter->getAutoSet())
+		{	// set program name to parameter
+			if (pProgram->get_file_cnt()>0)
+			{	// program files exist
+				if (FileNum==0)
+					pParameter->setProgramName("");
+				else
+				{
+					if (pProgram->get_file_name(FileNum))
+						pParameter->setProgramName(pProgram->get_name());
+					else
+						pParameter->setProgramName("");
+				}
+			
+				pParameter->setProgramName(pProgram->getFileName());
+				pParameter->write();
+			}	// program files exist
+		}	// set program name to parameter
+	}	// new value
+	else if (FileNum==0)
+		pProgram->setProgramFileNumber(FileNum);
+
+	forceUpdate= true;
+}	// SetLogging
+
 
 uint8_t Terminal_c::getAutoStartupVal(bool AutoSet, bool AutoOn)
 {	// getAutoStartupVal

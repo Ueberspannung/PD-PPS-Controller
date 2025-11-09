@@ -19,6 +19,8 @@
  *
  */
  
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+ 
 #include <string.h>
 #include "PD_UFP_Protocol.h"
 
@@ -485,34 +487,40 @@ bool PD_protocol_get_power_info(PD_protocol_t * p, uint8_t index, PD_power_info_
         uint32_t obj = p->power_data_obj[index];
         power_info->type = (PD_power_data_obj_type_t)(obj >> 30);
         switch (power_info->type) {
-        case PD_PDO_TYPE_FIXED_SUPPLY:
-            /* Reference: 6.4.1.2.3 Source Fixed Supply Power Data Object */
-            power_info->min_v = 0;
-            power_info->max_v = (obj >> 10) & 0x3FF;    /*  B19...10  Voltage in 50mV units */
-            power_info->max_i = (obj >>  0) & 0x3FF;    /*  B9 ...0   Max Current in 10mA units */
-            power_info->max_p = 0;
-            break;
-        case PD_PDO_TYPE_BATTERY:
-            /* Reference: 6.4.1.2.5 Battery Supply Power Data Object */
-            power_info->min_v = (obj >> 10) & 0x3FF;    /*  B19...10  Min Voltage in 50mV units */
-            power_info->max_v = (obj >> 20) & 0x3FF;    /*  B29...20  Max Voltage in 50mV units */
-            power_info->max_i = 0;
-            power_info->max_p = (obj >>  0) & 0x3FF;    /*  B9 ...0   Max Allowable Power in 250mW units */
-            break;
-        case PD_PDO_TYPE_VARIABLE_SUPPLY:
-            /* Reference: 6.4.1.2.4 Variable Supply (non-Battery) Power Data Object */
-            power_info->min_v = (obj >> 10) & 0x3FF;    /*  B19...10  Min Voltage in 50mV units */
-            power_info->max_v = (obj >> 20) & 0x3FF;    /*  B29...20  Max Voltage in 50mV units */
-            power_info->max_i = (obj >>  0) & 0x3FF;    /*  B9 ...0   Max Current in 10mA units */
-            power_info->max_p = 0;
-            break;
-        case PD_PDO_TYPE_AUGMENTED_PDO:
-            /* Reference: 6.4.1.3.4 Programmable Power Supply Augmented Power Data Object */
-            power_info->max_v = ((obj >> 17) & 0xFF) * 2;   /*  B24...17  Max Voltage in 100mV units */
-            power_info->min_v = ((obj >>  8) & 0xFF) * 2;   /*  B15...8   Min Voltage in 100mV units */
-            power_info->max_i = ((obj >>  0) & 0x7F) * 5;   /*  B6 ...0   Max Current in 50mA units */
-            power_info->max_p = 0;
-            break;
+			case PD_PDO_TYPE_FIXED_SUPPLY:
+				/* Reference: 6.4.1.2.3 Source Fixed Supply Power Data Object */
+				power_info->min_v = 0;
+				power_info->max_v = (obj >> 10) & 0x3FF;    /*  B19...10  Voltage in 50mV units */
+				power_info->max_i = (obj >>  0) & 0x3FF;    /*  B9 ...0   Max Current in 10mA units */
+				power_info->max_p = 0;
+				break;
+			case PD_PDO_TYPE_BATTERY:
+				/* Reference: 6.4.1.2.5 Battery Supply Power Data Object */
+				power_info->min_v = (obj >> 10) & 0x3FF;    /*  B19...10  Min Voltage in 50mV units */
+				power_info->max_v = (obj >> 20) & 0x3FF;    /*  B29...20  Max Voltage in 50mV units */
+				power_info->max_i = 0;
+				power_info->max_p = (obj >>  0) & 0x3FF;    /*  B9 ...0   Max Allowable Power in 250mW units */
+				break;
+			case PD_PDO_TYPE_VARIABLE_SUPPLY:
+				/* Reference: 6.4.1.2.4 Variable Supply (non-Battery) Power Data Object */
+				power_info->min_v = (obj >> 10) & 0x3FF;    /*  B19...10  Min Voltage in 50mV units */
+				power_info->max_v = (obj >> 20) & 0x3FF;    /*  B29...20  Max Voltage in 50mV units */
+				power_info->max_i = (obj >>  0) & 0x3FF;    /*  B9 ...0   Max Current in 10mA units */
+				power_info->max_p = 0;
+				break;
+			case PD_PDO_TYPE_AUGMENTED_PDO:
+				/* Reference: 6.4.1.3.4 Programmable Power Supply Augmented Power Data Object */
+				power_info->max_v = ((obj >> 17) & 0xFF) * 2;   /*  B24...17  Max Voltage in 100mV units */
+				power_info->min_v = ((obj >>  8) & 0xFF) * 2;   /*  B15...8   Min Voltage in 100mV units */
+				power_info->max_i = ((obj >>  0) & 0x7F) * 5;   /*  B6 ...0   Max Current in 50mA units */
+				power_info->max_p = 0;
+				break;
+			default:
+				power_info->max_v = 0;			
+				power_info->min_v = 0;			
+				power_info->max_i = 0;			
+				power_info->max_p = 0;			
+				break;
         }
         return true;
     }
@@ -599,3 +607,5 @@ void PD_protocol_init(PD_protocol_t * p)
     memset(p, 0, sizeof(PD_protocol_t));
     p->msg_state = &ctrl_msg_list[0];
 }
+
+#pragma GCC diagnostic pop

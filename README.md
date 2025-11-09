@@ -18,7 +18,7 @@ Interface for USB Type C Chargers with PD/PPS
 - RGB LED for output state
 - remote UI via VT100 serial terminal
 - serial programming interface for intergration in controll applications
-- SD Card for future use (eg. data logging)
+- SD Card for data logging and script control
 - all essential data at a glance
   - operating mode
   - set voltage / current
@@ -79,10 +79,17 @@ Interface for USB Type C Chargers with PD/PPS
 		  - [PuTTY - PPS, CV CC no load](./DOC/terminal.md#PuTTY-PPS-mode-no-load)
 		  - [PuTTY - PPS, CV CC load](./DOC/terminal.md#PuTTY-PPS-mode-load)
 		  - [PuTTY - PPS, CV CC overload](./DOC/terminal.md#PuTTY-PPS-mode-overload)
+		  - [PuTTY - PPS, no load V5.4, no card](./DOC/terminal.md#PuTTY-PPS-V5.4-no-card)
+		  - [PuTTY - PPS, no load V5.4, sd card](./DOC/terminal.md#PuTTY-PPS-sd-card)
+		  - [PuTTY - PPS, logging on](./DOC/terminal.md#PuTTY-PPS-logging)
+		  - [PuTTY - PPS, program selected](./DOC/terminal.md#PuTTY-PPS-program-selected)
+		  - [PuTTY - PPS, program runnign](./DOC/terminal.md#PuTTY-PPS-program-running)
 		  - [Kermit](./DOC/terminal.md#kermit)
 		- [Description](./DOC/terminal.md#description)
 	
 - [the serial programming interface](./DOC/spif.md)
+- [script contol](./DOC/script.md)	
+- [logging](./DOC/log.md)
 		
 - [The software](./DOC/sw.md)
   - [AVR SW](./DOC/sw.md#AVR-SW)

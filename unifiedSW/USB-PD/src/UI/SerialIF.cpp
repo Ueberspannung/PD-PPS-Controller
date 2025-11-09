@@ -1,6 +1,6 @@
 #include "SerialIF.h"
 #include "../ASCII/ASCII_ctrl.h"
-#include "../../version.h"
+#include "../tool/version.h"
 #include "../tool/convert.h"
 
 /*********************************
@@ -13,6 +13,7 @@
  * 	W	 E	erase parameter
  *  R	 F 	find closest Fix voltage
  *  RW	 I	max. available current at specific voltage
+ *  RW	 L  logging
  *  R	 N	number of availabele profiles / profile data
  *  RW	 O	output switch status
  *  RW	 R	select / read regulator mode
@@ -22,8 +23,8 @@
  *  R	 V	read version / built date
  */
 
-const char SerialIF_c::ReadCommands[]		="!#?CFINORSTUV";
-const char SerialIF_c::WriteCommands[]		="#?CEIORSU";
+const char SerialIF_c::ReadCommands[]		="!#?CFILNORSTUV";
+const char SerialIF_c::WriteCommands[]		="#?CEILORSU";
 
 const char SerialIF_c::StatusTextReady[]	="ready";
 const char SerialIF_c::StatusTextBusy[]		="busy";
@@ -36,13 +37,19 @@ const char SerialIF_c::RegulatorModes[]		="OFF\0CV\0CVCC\0CVCC^\0";
 const char SerialIF_c::AutoStartModes[]		="OFF\0SET\0ON\0";
 const char SerialIF_c::PowerModes[]			="N/A\0FIX\0PPS\0";
 
-
-void SerialIF_c::init(SerialClass * com, controller_c * Controller, parameter * Parameter)
+void SerialIF_c::init(	SerialClass * com, 
+						controller_c * Controller, 
+						parameter * Parameter, 
+						log_c * Log,
+						program_c * Program)
 {	// init
 	pPort=com;
 	pController=Controller;
 	pParameter=Parameter;
+	pLog=Log;
+	pProgram=Program;
 	externalUpdate=false;
+	bPauseAutoSend=false;
 }	// init
 
 
@@ -58,6 +65,11 @@ void SerialIF_c::end(void)
 {	// end
 	// disconnected
 }	// end
+
+void SerialIF_c::pauseAutoSend(bool bPause)
+{	// pauseAutoSend
+	bPauseAutoSend=bPause;
+}	// pauseAutoSend
 
 bool SerialIF_c::process(void)
 {	// process
@@ -96,7 +108,7 @@ bool SerialIF_c::process(void)
 			/* FALL THROUH */
 			if (bReceive())
 				DecodeCommand();
-			else if ((BufferCnt==0) && (SendIntervall>0))
+			else if ((BufferCnt==0) && (SendIntervall>0) && !bPauseAutoSend)
 			{	// check auto output status
 				if (((uint16_t)(TimeStamp-LastSend))>SendIntervall)
 				{	// send data
@@ -180,6 +192,9 @@ void SerialIF_c::DecodeCommand(void)
 					break;
 				case 'I':	//  RW	 I	max. available current at specific voltage
 					doCurrent();
+					break;
+				case 'L':
+					doLogging();
 					break;
 				case 'N':	//  R	 N	number of availabele profiles / profile data
 					doPowerInfo();
@@ -436,35 +451,44 @@ void SerialIF_c::doOutputStatus(void)
 	if (Buffer[0]==ReadFlag)
 	{	// send output status
 		LastSend+=SendIntervall;
-	BufferCnt=0;
+		BufferCnt=0;
 		addChar(Buffer,BufferCnt,'?');
 		addChar(Buffer,BufferCnt,'?');
 		addChar(Buffer,BufferCnt,SPACE);
 		
-	if (!pController->is_output_enabled())
-		addChar(Buffer,BufferCnt,'0');
-	else if (pController->is_constant_current_active())
-		addChar(Buffer,BufferCnt,'!');
-	else
-		addChar(Buffer,BufferCnt,'1');
-	addChar(Buffer,BufferCnt,SPACE);
-	convert_c(	pController->get_Vbus_mV(),
-				millisDecimals).getStringUnsigned(	&Buffer[BufferCnt],
-													millisLen,millisDecimals);
-	BufferCnt+=millisLen;
-	addChar(Buffer,BufferCnt,'V');
-	addChar(Buffer,BufferCnt,SPACE);
-	convert_c(	pController->get_output_voltage_mV(),
-				millisDecimals).getStringUnsigned(	&Buffer[BufferCnt],
-													millisLen,millisDecimals);
-	BufferCnt+=millisLen;
-	addChar(Buffer,BufferCnt,'V');
-	addChar(Buffer,BufferCnt,SPACE);
-	convert_c(	pController->get_output_current_mA(),
-				millisDecimals).getStringSigned(	&Buffer[BufferCnt],
-													millisLen,millisDecimals);
-	BufferCnt+=millisLen;
-	addChar(Buffer,BufferCnt,'A');
+		if (!pController->is_output_enabled())
+			addChar(Buffer,BufferCnt,'0');
+		else if (pController->is_constant_current_active())
+			addChar(Buffer,BufferCnt,'!');
+		else
+			addChar(Buffer,BufferCnt,'1');
+		addChar(Buffer,BufferCnt,SPACE);
+		convert_c(	pController->get_Vbus_mV(),
+					millisDecimals).getStringUnsigned(	&Buffer[BufferCnt],
+														millisLen,millisDecimals);
+		BufferCnt+=millisLen;
+		addChar(Buffer,BufferCnt,'V');
+		addChar(Buffer,BufferCnt,SPACE);
+		convert_c(	pController->get_output_voltage_mV(),
+					millisDecimals).getStringUnsigned(	&Buffer[BufferCnt],
+														millisLen,millisDecimals);
+		BufferCnt+=millisLen;
+		addChar(Buffer,BufferCnt,'V');
+		addChar(Buffer,BufferCnt,SPACE);
+		convert_c(	pController->get_output_current_mA(),
+					millisDecimals).getStringSigned(	&Buffer[BufferCnt],
+														millisLen,millisDecimals);
+		BufferCnt+=millisLen;
+		addChar(Buffer,BufferCnt,'A');
+		if (pController->has_temperature())
+		{ // add temperature
+			addChar(Buffer,BufferCnt,SPACE);
+			convert_c(	pController->get_temperature_dC(),
+						decisDecimals).getStringSigned(	&Buffer[BufferCnt],
+														decisLen,decisDecimals);
+			BufferCnt+=decisLen;
+		} // add temperature
+		addChar(Buffer,BufferCnt,'C');
 	}	// send output status
 	else
 	{	// set output status timer
@@ -881,5 +905,40 @@ void SerialIF_c::doVersion(void)
 	addChar(Buffer,BufferCnt,SPACE);
 	cpy(Buffer,BufferCnt,Version_c().pgmGetBuiltDate());
 }	// get version
+
+void SerialIF_c::doLogging(void)
+{	// get / set Logging
+	uint32_t logFileNum=0;
+
+	if (Buffer[0]==WriteFlag)
+	{	// configure Logging
+		uint16_t logInterval_ms;
+		log_c::logInterval_et logInterval=log_c::LOG_30000ms; 
+
+		logInterval_ms=convert_c(&Buffer[2]).getUnsigned(logDecimals);
+		while (logInterval_ms<pLog->getLogInterval_ms(logInterval))
+			logInterval=(log_c::logInterval_et)((uint8_t)logInterval-1);
+		pLog->setInterval(logInterval);
+		pParameter->setLogInteval(logInterval);
+		pParameter->write();
+		externalUpdate=true;
+	}	// configure Logging
+	
+	BufferCnt=2;
+	addChar(Buffer,BufferCnt,SPACE);
+	convert_c(	pLog->getLogInterval_ms(pParameter->getLogInterval()),
+				logDecimals).getStringUnsigned(	&Buffer[BufferCnt],
+												logIntervalLen,
+												logDecimals,
+												"ms");
+	BufferCnt+=logIntervalLen+2;
+	addChar(Buffer,BufferCnt,SPACE);
+	if (pLog->hasSD()) logFileNum=pLog->getLogFileNumber();
+	convert_c(	logFileNum,
+				logDecimals).getStringUnsignedZeros(&Buffer[BufferCnt],
+													logFileLen,
+													logDecimals);
+	BufferCnt+=logFileLen;
+}	// get / set Logging
 
 
